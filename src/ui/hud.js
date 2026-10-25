@@ -124,6 +124,11 @@ export function initHUD() {
         : 'Find the crystal in the vault.<br>Then escape through the exit door.';
     const levelLabel = state.level ? `${state.level} / ${state.levelCount} · ${state.levelName}` : '--';
     $('hud-level').textContent = levelLabel;
+    // Frame title above the game: "MUSEUM FLOOR · LEVEL 03 · THE GALLERY HALL".
+    if (state.level) {
+      $('frame-level').textContent = `MUSEUM FLOOR · LEVEL ${String(state.level).padStart(2, '0')}`
+        + ` · ${state.levelName.toUpperCase()}`;
+    }
     $('hud-coins').textContent = state.level
       ? `${state.coins} total (${state.levelCoins}/${state.levelCoinTotal} here)` : '--';
 

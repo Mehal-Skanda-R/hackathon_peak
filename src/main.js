@@ -40,6 +40,9 @@ class IntegrationScene extends Phaser.Scene {
 
         // Show the whole museum for two seconds whenever a round starts.
         let lastStatus = museum.status;
+        // The engine's first state was published before this scene existed;
+        // seed the shared snapshot so the HUD shows the level before Start.
+        updateGameState(museum.getState());
         museum.events.on('engine:state', (engineState) => {
             if (lastStatus === 'ready' && engineState.status === 'playing') visibilitySystem?.revealAll(2000, 500);
             lastStatus = engineState.status;
