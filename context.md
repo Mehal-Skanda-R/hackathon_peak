@@ -850,3 +850,6 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: audio (`780056f`). Looping game music (public/assets/audio/game-audio.mp3)
   everywhere; on each door it stops and victory.mp3 plays, then music resumes. Starts on first
   click/key (browser rule). SOUND ON/OFF toggle in the frame and home menu (per browser).
+- 25 Oct 2026 — Shyam: home screen replaced by the team's castle artwork (public/assets/home/
+  home-screen.webp) with hotspot buttons over its labels (`b06ff6c`). Level names now match it:
+  1 'The Museum Job', 7 'The Pinnacle Heist'. Printed progress/coins/locks in the image are static.
