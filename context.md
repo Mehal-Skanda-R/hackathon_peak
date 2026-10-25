@@ -342,7 +342,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | Soham | Implemented and tested on feature branch; integration pending | Mehal reviews/wires engine; Shyam binds routes/colliders | [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), code `b1e8d91`; 4 geometry + 5 Chromium tests; fixture build passed |
 | Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
 | Shyam | Assigned; guards not implemented | Agree geometry dependency; implement patrol + pulse response | None for fresh build |
-| Mehal | Assigned; starter/integration not implemented | Initialize Vite/Phaser 3 once and publish starter commit | None for fresh build |
+| Mehal | Starter initialized on main. Moving to PulseSystem and UI. | Initialize Vite/Phaser 3 once and publish starter commit | None for fresh build |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
 - Code: `feature/game-engine` at `b1e8d912a70a04bf6f6538a086604d33bda09dab`,
