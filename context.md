@@ -53,6 +53,30 @@ Do not claim the first biofeedback game. Our distinction is automatic heart-rate
 driven spatial pulses that provide information and create stealth risk together.
 Heart rate is a gameplay input, **not a fear score, emotion detector or diagnosis**.
 
+### Crossbreed presentation agreement — Soham / team, 25 Oct 2026
+
+Soham confirmed the team accepts this positioning:
+- Name both technologies: standard BLE Heart Rate Service through Web Bluetooth
+  (wearable physiological sensing) and Phaser 3 (real-time stealth simulation).
+- Measured heart rate/BPM is the input. In-game "noise" means simulated spatial
+  exposure, not microphone audio. Signal noise means measurement variation.
+  Do not claim stress/fear detection, emotion classification, medical diagnosis,
+  or exact synchronization of each animation with an individual physical beat.
+- The judged product requires LIVE sensing. Missing input pauses the heist, with
+  no automatic TEST fallback. Keep TEST as an explicitly disclosed development
+  simulator, separated from the competition experience/configuration.
+- This is an approved release requirement, NOT proof that separation is shipped:
+  inspected main at 4254863 still initializes TEST and exposes mode controls.
+  Mehal/integration coordinates implementation; Shubranshu verifies actual hardware.
+- Demonstrate real input driving both reveal and guard suspicion, then disconnect
+  and recover valid input before explicit Resume. A recorded real-device run may
+  back up the demo; TEST alone does not prove Crossbreed integration.
+- Soham created an editable 14-slide pitch (12 main + 2 appendix) with speaker
+  notes and visible terminology/removal-test distinctions. Local deliverable:
+  presentations/Heartbeat-Heist-Crossbreed-Pitch.pptx in Soham's workspace,
+  not committed to this repository. Real-device proof remains pending in the deck.
+  No game code or module APIs changed for this presentation task.
+
 ## 2. Fixed scope and fresh stack
 
 - JavaScript ES modules, plain HTML/CSS, **Phaser 3**, **Vite**, npm lockfile, Git/GitHub.
