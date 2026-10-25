@@ -779,3 +779,9 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: end-of-round screen. Caught/victory now show CAUGHT! / YOU ESCAPED!
   over the game with PLAY AGAIN (full scene restart, auto-starts if the sensor is usable)
   and an 'or press R' hint. Verified both outcomes in Chromium; one canvas, no errors.
+- 25 Oct 2026 — Shyam: production UI now uses Soham's museum frame + briefing design
+  (previously only in tests/engine/fixture). Live HUD folded into the gold panel; TEST
+  controls moved into a labelled "Developer simulator · TEST" box; FULL SCREEN button/F key
+  (Phaser Scale.FIT). No game-logic change. Note: the Crossbreed agreement's LIVE-first
+  release configuration (TEST separated from the judged experience) is still NOT done:
+  the page still starts in TEST. Needs a team decision on how TEST is reached (e.g. ?dev).
