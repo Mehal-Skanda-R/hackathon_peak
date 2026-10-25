@@ -35,3 +35,10 @@ export function updateGameState(updates) {
   state = { ...state, ...updates };
   listeners.forEach(cb => cb(state));
 }
+
+// Single readiness rule for Start, Resume and the sensor-loss pause
+// (context.md section 5): fresh, calibrated input; LIVE also needs the device.
+export function isSensorUsable(sensor) {
+  if (!sensor || !sensor.calibrated || sensor.stale || sensor.smoothedBpm == null) return false;
+  return sensor.mode === 'test' || sensor.connected === true;
+}

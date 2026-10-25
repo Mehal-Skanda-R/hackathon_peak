@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import MuseumScene from './game/MuseumScene.js';
-import { getGameState, updateGameState } from './game/GameState.js';
+import { getGameState, updateGameState, isSensorUsable } from './game/GameState.js';
 import PulseSystem from './game/PulseSystem.js';
 import PulseEffects from './game/PulseEffects.js';
 import VisibilitySystem from './game/VisibilitySystem.js';
@@ -52,15 +52,8 @@ class IntegrationScene extends Phaser.Scene {
         museum.events.on('update', (time, delta) => {
             const state = getGameState();
             
-            if (state.status === 'playing') {
-                const s = state.sensor;
-                const isUsable = s.mode === 'test' 
-                    ? (s.calibrated && !s.stale && s.smoothedBpm !== null)
-                    : (s.connected && s.calibrated && !s.stale && s.smoothedBpm !== null);
-                
-                if (!isUsable) {
-                    museum.setPaused(true, 'Sensor input lost or stale');
-                }
+            if (state.status === 'playing' && !isSensorUsable(state.sensor)) {
+                museum.setPaused(true, 'Sensor input lost or stale');
             }
 
             if (pulseSystem) {
@@ -80,14 +73,21 @@ class IntegrationScene extends Phaser.Scene {
 
         window.addEventListener('hud-start-clicked', () => {
             const state = getGameState();
-            const s = state.sensor;
-            const canStart = s.mode === 'test'
-                ? (s.calibrated && !s.stale && s.smoothedBpm !== null)
-                : (s.connected && s.calibrated && !s.stale && s.smoothedBpm !== null);
+            if (state.status === 'ready' && isSensorUsable(state.sensor)) museum.startRun();
+        });
 
-            if (state.status === 'ready' && canStart) {
-                museum.startRun();
-            }
+        // Explicit resume only; setPaused(false) itself refuses terminal states.
+        window.addEventListener('hud-resume-clicked', () => {
+            const state = getGameState();
+            if (state.status === 'paused' && isSensorUsable(state.sensor)) museum.setPaused(false);
+        });
+
+        window.addEventListener('hud-test-mode-clicked', () => setSensorMode('test'));
+        // Step from the chosen value, not the jittered reading; TestSensor clamps 40..200.
+        let testBpm = 72;
+        window.addEventListener('hud-test-bpm', (event) => {
+            testBpm = Math.max(40, Math.min(200, testBpm + event.detail));
+            setTestBpm(testBpm);
         });
 
         window.addEventListener('hud-ble-clicked', async () => {
@@ -102,10 +102,9 @@ class IntegrationScene extends Phaser.Scene {
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
-            const state = getGameState();
-            if (state.status === 'ready') {
-                window.dispatchEvent(new Event('hud-start-clicked'));
-            }
+            const { status } = getGameState();
+            if (status === 'ready') window.dispatchEvent(new Event('hud-start-clicked'));
+            else if (status === 'paused') window.dispatchEvent(new Event('hud-resume-clicked'));
         });
 
         subscribeToHeartRate((sensorState) => {
