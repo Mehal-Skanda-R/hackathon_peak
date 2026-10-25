@@ -360,6 +360,33 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Soham's latest-game audit — 25 Oct 2026
+- Audited main snapshot `f35f81e` in an isolated source export; no game source edits.
+  npm ci, all **46** Node tests and production build passed (existing chunk warning).
+- Chromium checks: home/help/locked-floor behavior, real keyboard movement, preview
+  lock, walls/cover, ordinary menu pause/Continue, full-screen menu, all seven door
+  transitions, coin banking, final crystal/door gating, victory freeze, caught/retry,
+  repeated R cleanup and simulated sensor-loss/recalibration/Resume passed.
+  Audio assets loaded; mute/unmute playback states passed. No page/console errors
+  or failed requests. Objective traversal used controlled positioning: not a natural
+  seven-level victory or balance proof. Real BLE remains untested by this audit.
+- **Confirmed integration bug (Mehal/shared integration):** enter an exit door, then
+  open MENU during the animation. Next floor auto-starts behind home and guards
+  move after its preview. hud-open-menu pauses only playing; level-complete's
+  auto-start does not check homeOpen(). Defer start while home is open or prevent
+  menu opening during transition, preserving sensor readiness checks.
+- **Confirmed home UI issue (home/UI owner):** the artwork prints Continue Floor02,
+  progress1/7, best coins6 and fixed lock/check icons. Fresh actual storage is
+  unlocked1/completed0/bestCoins0; Continue starts1. Even after completing seven
+  floors, image labels remain unchanged. Hotspots enforce real progress but
+  printed labels disagree. Render actual counts/selection/locks over the artwork.
+- Evidence saved locally in `heartbeat-heist-audit-f35f81e/audit-results/REPORT.md`,
+  `results.json` and screenshots in Soham's workspace; audit.cjs is a local harness.
+  No fixes or new contracts published. LIVE-first competition configuration remains
+  pending in the inspected startup code.
+
+
+
 ### Integration tasks by Shyam's AI for Mehal — 25 Oct 2026 (IST)
 - **Decision:** Mehal's AI ran out of quota, so Shyam asked his AI to do Mehal's assigned
   integration tasks. Mehal keeps ownership of main.js/GameState/HUD/package.json/deploy.
