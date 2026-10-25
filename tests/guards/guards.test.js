@@ -169,6 +169,10 @@ test('state snapshots are frozen and match the contract shape', () => {
   assert.deepEqual(Object.keys(s).sort(), ['id', 'state', 'suspicion', 'x', 'y']);
 });
 
+// Canvas 2D stand-in: every drawing call is a no-op.
+const fakeContext = () => new Proxy({}, { get: (t, k) => k === 'createRadialGradient'
+  ? () => ({ addColorStop() {} }) : (t[k] ?? (() => {})), set: (t, k, v) => { t[k] = v; return true; } });
+
 // Minimal Phaser stand-in: display objects lose `scene` when destroyed, and
 // 'shutdown' destroys everything the scene owns, as a Phaser restart does.
 function drawingScene() {
@@ -183,23 +187,34 @@ function drawingScene() {
     objects.forEach(o => o.destroy());
   };
   scene.listenerCount = name => (handlers[name] ?? []).length;
-  scene.add = { rectangle() {
+  const make = () => {
     const o = { scene, destroyCalls: 0,
-      destroy() { this.destroyCalls++; this.scene = null; },
-      setStrokeStyle() { return this; }, setDepth() { return this; }, setOrigin() { return this; },
-      setPosition() { if (!this.scene) throw new TypeError('setPosition on destroyed'); return this; },
-      setFillStyle() { return this; },
-      setSize() { if (!this.scene) throw new TypeError("Cannot read properties of null (reading 'setSize')"); return this; } };
+      destroy() { this.destroyCalls++; this.scene = null; } };
+    const live = name => function () { if (!this.scene) throw new TypeError(`Cannot read properties of null (reading '${name}')`); return this; };
+    for (const m of ['setPosition', 'setSize', 'setTexture', 'setText', 'setColor', 'setFillStyle']) o[m] = live(m);
+    for (const m of ['setDepth', 'setOrigin', 'setStrokeStyle']) o[m] = function () { return this; };
     objects.push(o); return o;
-  } };
+  };
+  scene.add = { rectangle: make, image: make, text: make };
+  const textures = new Set();
+  scene.textures = { exists: k => textures.has(k), createCanvas: k => { textures.add(k); return { context: fakeContext(), refresh() {} }; } };
   scene.objects = objects;
   return scene;
 }
 
-test('creates one body + one suspicion bar per guard', () => {
+test('creates one sprite, one suspicion bar and one alert icon per guard', () => {
   const scene = drawingScene();
   new GuardSystem(scene, MAP_GEOMETRY);
-  assert.equal(scene.objects.length, 4);
+  assert.equal(scene.objects.length, 6);
+});
+
+test('guard sprite frames are drawn once and cached per facing/stride', () => {
+  const scene = drawingScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  run(system, 3000, far);
+  const before = scene.textures.exists('hh-guard-v1-down-0');
+  new GuardSystem(scene, MAP_GEOMETRY);
+  assert.ok(before);
 });
 
 test('after a scene shutdown, old system never touches destroyed objects', () => {
@@ -226,7 +241,7 @@ test('restart cycle (shutdown -> destroy old -> new system) gives a clean second
   assert.equal(scene.listenerCount('shutdown'), 0, 'no leaked shutdown listener');
   const second = new GuardSystem(scene, MAP_GEOMETRY);
   assert.deepEqual(second.getStates(), initial);
-  assert.equal(scene.objects.filter(o => o.scene).length, 4, 'only the new run\'s 4 objects are live');
+  assert.equal(scene.objects.filter(o => o.scene).length, 6, 'only the new run\'s 6 objects are live');
   run(second, 1000, far);
   assert.ok(second.getStates().every(g => g.state === 'patrol' && g.suspicion === 0));
 });
