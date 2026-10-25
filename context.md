@@ -806,3 +806,5 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: pulse reveal is now a soft radial gradient (Among Us-style vision):
   darkness RenderTexture with a gradient brush erased per pulse; reveal fades out at the end;
   the white outline ring became a faint soft glow band. Radius/timing/exposure unchanged.
+- 25 Oct 2026 — Shyam: the pulse light/glow now follows the thief while it expands (drawn at
+  the current player position). Guard exposure still uses the pulse's emission snapshot.
