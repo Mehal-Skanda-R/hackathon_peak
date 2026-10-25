@@ -43,8 +43,10 @@ for (const [index, level] of LEVELS.entries()) {
       const points = [door, ...level.coins, ...level.hidingZones.map(z => ({ x: z.x + 16, y: z.y + 16 })),
         ...(level.artefact ? [level.artefact] : [])];
       for (const point of points) assert.ok(distances.has(tile(point)), `unreachable ${tile(point)}`);
+      const inside = (p, r) => p.x >= r.x && p.x < r.x + r.width && p.y >= r.y && p.y < r.y + r.height;
       for (const coin of level.coins) {
         assert.equal(getHidingZone(coin.x, coin.y, 1), null, `coin ${tile(coin)} sits in cover`);
+        assert.ok(!inside(coin, level.door) && !inside(coin, level.entrance), `coin ${tile(coin)} sits on a door`);
       }
       // The door needs 50% of this level's coins, rounded up.
       assert.equal(level.coinsRequired, Math.ceil(level.coins.length * 0.5),

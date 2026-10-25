@@ -84,7 +84,11 @@ export function initHome() {
     return s.status === 'paused' && s.pauseReason === 'Menu open';
   };
 
-  const continueLevel = () => resumable() ? getGameState().level : loadProgress().unlocked;
+  const continueLevel = () => {
+    if (resumable()) return getGameState().level;
+    const { unlocked, completed } = loadProgress();
+    return completed >= LEVELS.length ? 1 : unlocked; // castle done: new run from floor 1
+  };
   $('home-play').addEventListener('click', () => play(continueLevel()));
   $('home-enter').addEventListener('click', () => play(continueLevel()));
   $('home-floors').addEventListener('click', () => toast('Pick a floor on the right.'));
@@ -126,6 +130,12 @@ export function initHome() {
   };
   const show = () => { render(); $('home-modal').hidden = true; document.body.classList.add('home-open'); };
   const hide = () => document.body.classList.remove('home-open');
+  // While home is open, R must not restart the (paused) level behind it.
+  window.addEventListener('keydown', event => {
+    if (document.body.classList.contains('home-open') && (event.key === 'r' || event.key === 'R')) {
+      event.stopPropagation();
+    }
+  }, { capture: true });
   window.addEventListener('hud-show-home', show);
   window.addEventListener('hud-hide-home', hide);
   show();

@@ -71,6 +71,12 @@ export function initHUD() {
   doorNotice.setAttribute('role', 'status');
   game.appendChild(doorNotice);
   let noticeTimer = null;
+  window.addEventListener('hud-notice', event => {
+    doorNotice.textContent = event.detail;
+    doorNotice.classList.add('show');
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => doorNotice.classList.remove('show'), 3200);
+  });
   window.addEventListener('hud-door-locked', event => {
     const s = event.detail;
     const missing = Math.max(0, s.coinsRequired - s.levelCoins);

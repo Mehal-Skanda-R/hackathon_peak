@@ -128,7 +128,7 @@ export const LEVELS = Object.freeze([
     entrance: tileRect(1, 13, 2, 3),
     door: tileRect(22, 1, 2, 2),
     artefact: null,
-    coins: coins([[1, 1], [7, 1], [4, 8], [1, 15], [9, 5], [15, 1], [9, 15], [15, 15],
+    coins: coins([[1, 1], [7, 1], [4, 8], [4, 15], [9, 5], [15, 1], [9, 15], [15, 15],
       [16, 10], [23, 15], [23, 7], [19, 4], [19, 1]]),
     coinsRequired: requiredCoins(13),
     decor: Object.freeze({

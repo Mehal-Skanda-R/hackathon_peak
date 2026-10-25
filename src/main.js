@@ -185,14 +185,24 @@ class IntegrationScene extends Phaser.Scene {
             setTestBpm(testBpm);
         });
 
+        const notice = (text) => window.dispatchEvent(new CustomEvent('hud-notice', { detail: text }));
         window.addEventListener('hud-ble-clicked', async () => {
+            // Safari/Firefox and plain http have no Web Bluetooth: say so instead
+            // of switching to a LIVE mode that can never connect.
+            if (!navigator.bluetooth) {
+                notice('Bluetooth is not available here. Use Chrome or Edge on a desktop (https).');
+                return;
+            }
+            const previousMode = getGameState().sensor.mode;
             try {
                 setSensorMode('live');
-                if (typeof connectHeartRate === 'function') {
-                    await connectHeartRate();
-                }
+                await connectHeartRate();
+                notice('Heart-rate sensor connected. Calibrating…');
             } catch (err) {
-                console.error('BLE Connection failed:', err);
+                console.warn('BLE connection failed:', err);
+                notice(err?.name === 'NotFoundError' ? 'No sensor selected.' : `Could not connect: ${err?.message ?? err}`);
+                // A failed/cancelled connect returns to the simulator the player was using.
+                if (previousMode === 'test') setSensorMode('test');
             }
         });
 

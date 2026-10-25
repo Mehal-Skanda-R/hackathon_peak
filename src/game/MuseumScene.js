@@ -232,6 +232,7 @@ export default class MuseumScene extends Phaser.Scene {
 
   restartRun() {
     if (this.restartPending) return;
+    if (this.status === 'transition') return; // never undo a door already entered
     if (this.status === 'victory') return this.restartGame(); // game finished: from level 1
     // Phaser queues a restart until the next scene step. Freeze this run now.
     this.restartPending = true;
