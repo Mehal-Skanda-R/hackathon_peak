@@ -844,3 +844,6 @@ context commit verified on main (or publication pending/failed).
   has 2-4 guards (`GUARD_ROUTES_BY_LEVEL`); routes to the door are 40-48 tiles (final 34).
 - 25 Oct 2026 — Shyam: start-of-level map preview is now 2 s (then 0.5 s fade); during the
   hold the thief cannot move and pulses/guards wait (`setInputLocked`, `isHolding`).
+- 25 Oct 2026 — Shyam: castle home screen (`2384405`) with floor select, How to play,
+  progress panel and in-game MENU (pauses as 'Menu open'). Progress (unlocked/completed floors,
+  best coins) is per-browser localStorage via src/ui/progress.js. Engine: `startAtLevel(index)`.
