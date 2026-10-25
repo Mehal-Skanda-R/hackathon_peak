@@ -334,6 +334,27 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Integration tasks by Shyam's AI for Mehal — 25 Oct 2026 (IST)
+- **Decision:** Mehal's AI ran out of quota, so Shyam asked his AI to do Mehal's assigned
+  integration tasks. Mehal keeps ownership of main.js/GameState/HUD/package.json/deploy.
+- Merged into main: PR #7 sensor fix (`e71c30a`), PR #5 preview renderer (`615bf45`),
+  PR #6 combined-heist test + `guardTexture` (`7f1b674`; main's newer context.md kept).
+- `7a0f34a` Resume fix: `GameState.isSensorUsable(sensor)` is the one readiness rule for
+  Start, Resume and the sensor-loss pause (calibrated, fresh, smoothedBpm; LIVE also
+  connected). HUD: RESUME button (or Space) only while paused and usable, never after
+  caught/victory; sensor line (CALIBRATING / NO SIGNAL / NOT CONNECTED / READY); pause
+  reason; Start/Resume greyed until usable; TEST BPM -5/+5 buttons; USE TEST MODE in LIVE.
+- Evidence (Chromium, Node 22.22.0): `npm ci`, `npm test` (30 passed), `npm run build` pass.
+  Soham's `tests/engine/combined-heist.cjs`: two consecutive keyboard-only **victories**,
+  `testStartupWorkaround: false`, no page errors. UI-only run: fresh load calibrating, Start
+  greyed and ignored → calibrated → Start → CONNECT BLE (no device) → paused "Sensor input
+  lost or stale", guards frozen, Resume disabled, Space ignored → USE TEST MODE → ~45 s
+  recalibration → Resume → playing → caught (harness teleport) → no Resume; Resume/Space
+  ignored → R → guards (304,80)/(560,144) suspicion 0 → second run starts. No errors.
+- **Not done:** Vercel deployment (no Vercel access in this environment; import the repo in
+  Vercel, framework Vite, build `npm run build`, output `dist`), real BLE device, human
+  balance playtest, backup recording, rehearsal.
+
 ### Sensor fixes by Shyam's AI for Shubranshu — 25 Oct 2026 (IST)
 - **Decision:** Shubranshu's AI was unavailable, so Shyam asked his AI to cover the
   sensor code tasks. Shubranshu keeps ownership of `src/sensor/*` and the hardware test.
@@ -525,9 +546,9 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
 | Soham | Engine/art merged; two full baseline wins and victory gating verified; helper/test PR #6 open | Human high-BPM/cover playtest; support Shyam's optional sprite adoption | [PR #6](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/6), `492ce17`; 22 checks pass; two wins; stress trial documented |
-| Shubranshu | TEST auto-start on load pushed by Shubranshu (`9ef7cfa`, `313d719`); calibration-reset fix + sensor tests in [PR #7](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/7) (done by Shyam's AI, see note) | Test the real device on the demo laptop; Mehal merges PR #7 | PR #7 `1b91197`; npm test 30 passed (8 new sensor); fresh-load TEST flow verified in Chromium; hardware unverified |
+| Shubranshu | TEST auto-start (`9ef7cfa`, `313d719`) + calibration-reset fix and sensor tests (PR #7, merged as `e71c30a`, by Shyam's AI) | Test the real device on the demo laptop | npm test 30 passed incl. 8 sensor; hardware unverified |
 | Shyam | Guards and disposal PR #4 merged; victory freeze verified in two complete wins | Review optional guardTexture helper in PR #6; human balance testing at higher exposure | 18 guard checks pass; routes unchanged; see combined playtest below |
-| Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commit dbd473e (all PRs merged, gates active, 22 tests passing) |
+| Mehal | Integration tasks done by Shyam's AI while Mehal's AI is out of quota (see note): PRs #5/#6/#7 merged, Resume + HUD sensor controls on main | Deploy main to Vercel (needs Mehal's account) and verify HTTPS + Bluetooth; rehearse | main `7a0f34a`; npm test 30 passed; build passed; 2 wins + caught/Resume/restart UI run, no errors |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
 - Code: `feature/game-engine` at `8a15f7ed5dc1e4c0a4daa6fc2dd60b3b8bb3b924`,
