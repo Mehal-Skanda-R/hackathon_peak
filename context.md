@@ -842,3 +842,5 @@ context commit verified on main (or publication pending/failed).
   exit door, 4 guards). Replaces the interim "Vault" level 2. Levels 2-7 are text grids in
   `config.js` (legend in `asciiLevel`); concept-sheet gem cases became coin clusters. Each level
   has 2-4 guards (`GUARD_ROUTES_BY_LEVEL`); routes to the door are 40-48 tiles (final 34).
+- 25 Oct 2026 — Shyam: start-of-level map preview is now 2 s (then 0.5 s fade); during the
+  hold the thief cannot move and pulses/guards wait (`setInputLocked`, `isHolding`).
