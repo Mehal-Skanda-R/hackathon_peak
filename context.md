@@ -334,6 +334,22 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Sensor fixes by Shyam's AI for Shubranshu — 25 Oct 2026 (IST)
+- **Decision:** Shubranshu's AI was unavailable, so Shyam asked his AI to cover the
+  sensor code tasks. Shubranshu keeps ownership of `src/sensor/*` and the hardware test.
+- Shubranshu's own `9ef7cfa`/`313d719` (TEST auto-start on module load, same-mode TEST
+  no-op only while the watchdog runs) were reviewed and kept. With them, a fresh page load
+  now produces TEST readings with no live→test workaround.
+- [PR #7](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/7) `fix/sensor-test-startup` @ `1b91197`:
+  the stale watchdog, BLE disconnect and `disconnectHeartRate()` now clear calibrated/
+  baseline/delta/BPM (previously `calibrated` stayed true); fixes the calibration start at
+  timestamp 0; adds export `parseHeartRateMeasurement`; adds `tests/sensor/sensor.test.js`
+  (8 tests: fake clock/timers/Web Bluetooth) to `npm test` (package.json: Mehal to confirm).
+- Evidence: `npm test` 30 passed; build passed. Chromium fresh load, no workarounds:
+  readings at 3 s; Space blocked until calibrated (~45 s); Space → playing; switching to
+  LIVE without a device → paused, calibrated false, stale true, no TEST fallback; no errors.
+- Still open: real device test (Shubranshu); Resume after a sensor-loss pause (Mehal).
+
 ### Soham → Shyam/Mehal: full wins, victory gating and guard artwork — 25 Oct 2026, 11:55 IST
 - Synced/tested main base `5a8b0ad`; PR #4 is already merged. Root npm test now
   **passes 22 checks** (18 guards + 4 geometry). No walls/routes/tuning changed.
@@ -509,7 +525,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
 | Soham | Engine/art merged; two full baseline wins and victory gating verified; helper/test PR #6 open | Human high-BPM/cover playtest; support Shyam's optional sprite adoption | [PR #6](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/6), `492ce17`; 22 checks pass; two wins; stress trial documented |
-| Shubranshu | Sensor code merged; hardware unverified | Fix normal TEST startup with Mehal; verify state/calibration/loss and actual device | Device/model and live results pending |
+| Shubranshu | TEST auto-start on load pushed by Shubranshu (`9ef7cfa`, `313d719`); calibration-reset fix + sensor tests in [PR #7](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/7) (done by Shyam's AI, see note) | Test the real device on the demo laptop; Mehal merges PR #7 | PR #7 `1b91197`; npm test 30 passed (8 new sensor); fresh-load TEST flow verified in Chromium; hardware unverified |
 | Shyam | Guards and disposal PR #4 merged; victory freeze verified in two complete wins | Review optional guardTexture helper in PR #6; human balance testing at higher exposure | 18 guard checks pass; routes unchanged; see combined playtest below |
 | Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commit dbd473e (all PRs merged, gates active, 22 tests passing) |
 
