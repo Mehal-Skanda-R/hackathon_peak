@@ -141,7 +141,9 @@ export default class Guard {
   }
 
   updateChase(seconds, deltaMs, player) {
-    const sees = player && this.hasLineOfSight(this, player);
+    // A player fully inside cover is invisible to guards: no sight, no catch
+    // (team decision, context.md section 4). Pulses still raise suspicion.
+    const sees = player && !player.hiding && this.hasLineOfSight(this, player);
     if (sees) {
       this.lastSeen = { x: player.x, y: player.y };
       this.lostSightMs = 0;

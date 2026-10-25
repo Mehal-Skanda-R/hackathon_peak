@@ -117,6 +117,38 @@ test('no catch through a wall, even when very close', () => {
   assert.ok(canOccupy(guard.x, guard.y, GUARD_TUNING.bodySize));
 });
 
+test('a player hiding in cover is never caught, even right next to a chasing guard', () => {
+  const scene = fakeScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  const g = system.getStates()[0];
+  const player = { x: g.x + 10, y: g.y, hiding: true };   // inside catch distance
+  for (let i = 0; i < 3; i++) system.handlePulse(pulse(player, { hidingAtEmission: false }));
+  assert.equal(system.getStates()[0].state, 'chase');
+  run(system, 5000, player);
+  assert.equal(scene.events.emitted.filter(e => e.name === GUARD_EVENTS.CAUGHT).length, 0);
+  assert.notEqual(system.getStates()[0].state, 'chase', 'guard gives up on a hidden player');
+});
+
+test('stepping out of cover makes the player catchable again', () => {
+  const scene = fakeScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  const g = system.getStates()[0];
+  const player = { x: g.x + 40, y: g.y, hiding: true };
+  for (let i = 0; i < 3; i++) system.handlePulse(pulse(player));
+  run(system, 4000, player);
+  assert.equal(scene.events.emitted.length, 0);
+  assert.notEqual(system.getStates()[0].state, 'chase', 'lost the hidden player');
+  // Out in the open next to the guard again: a fresh chase can catch.
+  const now = system.getStates()[0];
+  const [dx, dy] = [[40, 0], [-40, 0], [0, 40], [0, -40]].find(([dx, dy]) =>
+    canOccupy(now.x + dx, now.y + dy, 18) && hasLineOfSight(now, { x: now.x + dx, y: now.y + dy }));
+  Object.assign(player, { x: now.x + dx, y: now.y + dy, hiding: false });
+  for (let i = 0; i < 3; i++) system.handlePulse(pulse(player));
+  assert.equal(system.getStates()[0].state, 'chase');
+  run(system, 3000, player);
+  assert.equal(scene.events.emitted.filter(e => e.name === GUARD_EVENTS.CAUGHT).length, 1);
+});
+
 test('a pulse alone never catches; patrol/suspicious guards never catch', () => {
   const scene = fakeScene();
   const system = new GuardSystem(scene, MAP_GEOMETRY);
