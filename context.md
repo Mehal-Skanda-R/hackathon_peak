@@ -884,3 +884,6 @@ context commit verified on main (or publication pending/failed).
   (half the level's coins, rounded up; L1 7/13, L2 6/11, L3 6/11, L4 5/9, L5 8/16, L6 5/10,
   L7 5/9 + crystal). Engine: `doorOpen`, `coinsRequired` in state, `engine:door-locked`. Coin chip
   over the canvas shows progress (`337ff8d`).
+- 25 Oct 2026 — Shyam: coin rule fixed at **50% of the level's own coins (rounded up)** via
+  `requiredCoins()` in config.js (tested for every level); banked coins never count. Coin counter
+  is now clean top-right text over the game (`7d06e12`).
