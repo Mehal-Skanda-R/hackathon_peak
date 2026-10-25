@@ -165,7 +165,6 @@ export function startCalibration() {
 
 export function setSensorMode(mode) {
   if (mode !== 'live' && mode !== 'test') return;
-  if (currentState.mode === mode) return;
 
   disconnectHeartRate();
 
@@ -174,14 +173,16 @@ export function setSensorMode(mode) {
 
   if (mode === 'test') {
     currentState.connected = false;
-    testSensor.start();
-    startWatchdog();
-    startCalibration();
+    testSensor.start();      
+    startWatchdog();       
+    startCalibration();     
   }
 
   notifySubscribers();
 }
 
+// AUTO-START TEST MODE ON INITIAL MODULE LOAD:
+setSensorMode('test');
 export function setTestBpm(bpm) {
   if (currentState.mode !== 'test') return;
   testSensor.setBpm(bpm);
