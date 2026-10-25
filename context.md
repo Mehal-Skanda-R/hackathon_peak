@@ -334,6 +334,37 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Soham → Shyam/Mehal: full wins, victory gating and guard artwork — 25 Oct 2026, 11:55 IST
+- Synced/tested main base `5a8b0ad`; PR #4 is already merged. Root npm test now
+  **passes 22 checks** (18 guards + 4 geometry). No walls/routes/tuning changed.
+- [PR #6](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/6), `test/combined-heist`
+  @ `492ce17316949d57211403cdc7ea91a5483c3a5d` adds a reproducible keyboard-only
+  full-heist check and optional guard art helper; see docs/COMBINED_PLAYTEST.md.
+- Two consecutive wins at calibrated ~72 BPM (baseline 72/delta 0), 17.465/17.471 s,
+  21 automatically scheduled pulses each. Both guards/visibility active, no player
+  or guard teleportation, no invulnerability or artificial state/calibration injection.
+- After BOTH victories, guards stayed exactly frozen for 2.5 s and no pulse emitted.
+  R restored both guards to their original patrol/spawn/suspicion snapshots. One
+  canvas, zero page errors across both runs.
+- Neither guard center occupied the artefact west opening (tile 17,3) in those
+  playing frames. Guards have no Arcade bodies and cannot physically seal a passage;
+  capture can still make a doorway tactically dangerous. No patrol camping observed.
+- Separate 110 BPM trial after genuine 72 BPM calibration (delta 38) was caught in
+  6.248 s before pickup, 12 pulses; gallery suspicion 1, east ~0.864. This makes a
+  direct sprint risky; one trial cannot establish that guard-east is unfair or
+  high-BPM play impossible. Known-route automation is not human navigation in darkness.
+  Human cover/waiting/patrol-timing balance testing remains necessary.
+- The normal initial TEST source was still idle. Tests explicitly used live→test
+  activation and waited the full 45 s calibration. That startup issue is not cleared;
+  real BLE behavior was not tested.
+- Optional engine-owned `guardTexture(scene, facing='down', stride=0)` export in
+  MuseumArt.js provides eight cached 40×40 frames matching the thief/museum palette.
+  Shyam owns adoption in GuardSystem: preserve 20px logic bodies and depth-9 bars;
+  use image texture/tint instead of Rectangle setFillStyle. No visual wiring in PR #6.
+- Helper render/cache smoke and fixture build passed. Coordinate changes/API payloads,
+  map geometry, patrols, speeds and suspicion/caught rules are unchanged.
+
+
 ### Museum preview white-canvas fix — 25 Oct 2026 (Soham)
 - User preview at port 5174 showed a white broken canvas while status still said
   VICTORY. The actual affected tab console reported: WebGL Context lost. Renderer disabled.
@@ -477,9 +508,9 @@ completion. Prior prototype tests do not count; the engine results below are fre
 
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
-| Soham | Engine merged; art PR #3 awaiting review | Support art integration; playtest walls/cover/objectives and two consecutive runs | [Art PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), `db5fd09`; 4 geometry + 5 Chromium checks, fixture/root builds and TEST-mode smoke passed |
+| Soham | Engine/art merged; two full baseline wins and victory gating verified; helper/test PR #6 open | Human high-BPM/cover playtest; support Shyam's optional sprite adoption | [PR #6](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/6), `492ce17`; 22 checks pass; two wins; stress trial documented |
 | Shubranshu | Sensor code merged; hardware unverified | Fix normal TEST startup with Mehal; verify state/calibration/loss and actual device | Device/model and live results pending |
-| Shyam | Guards integrated on main; integrated-play + restart verified; disposal fix in [PR #4](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/4) | Mehal merges PR #4; retest after TEST-startup/gating fixes | `feature/guard-ai` @ `9f0c238`; 18 guard tests passed; Chromium playthrough of combined game (two runs) passed, no errors |
+| Shyam | Guards and disposal PR #4 merged; victory freeze verified in two complete wins | Review optional guardTexture helper in PR #6; human balance testing at higher exposure | 18 guard checks pass; routes unchanged; see combined playtest below |
 | Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commit dbd473e (all PRs merged, gates active, 22 tests passing) |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
