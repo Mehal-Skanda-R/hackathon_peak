@@ -53,7 +53,7 @@ function mergeCells(rows, chars, skip = new Set()) {
   return done.map(r => tileRect(r.column, r.row, r.columns, r.rows));
 }
 
-function asciiLevel({ id, name, rows, spawn, entrance, door, artefact, coinsRequired }) {
+function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
   if (rows.length !== MAP_ROWS || rows.some(line => line.length !== MAP_COLUMNS)) {
     throw new Error(`Level ${id} must be ${MAP_COLUMNS} x ${MAP_ROWS}`);
   }
@@ -86,8 +86,7 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact, coinsRequ
     door: tileRect(...door),
     artefact: artefact ? Object.freeze({ ...center(...artefact), size: 20 }) : null,
     coins: coins(coinTiles),
-    // Coins needed before the exit door opens (default: half, rounded up).
-    coinsRequired: coinsRequired ?? Math.ceil(coinTiles.length / 2),
+    coinsRequired: requiredCoins(coinTiles.length),
     decor: Object.freeze({
       rugs: mergeCells(rows, new Set(['r'])).map(r => [r.x + 3, r.y + 3, r.width - 6, r.height - 6]),
       banners, lamps, statues, exhibits, pools,
@@ -95,6 +94,12 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact, coinsRequ
     }),
   });
 }
+
+// Rule for every level: the exit door opens only after the player has
+// collected at least 50% of that level's coins (rounded up), counted within
+// the level; coins banked on earlier levels do not count.
+export const COIN_SHARE_REQUIRED = 0.5;
+export const requiredCoins = total => Math.ceil(total * COIN_SHARE_REQUIRED);
 
 // Levels play in order (level 1 + levels 02-07 from the team's concept sheet).
 // Entering a level's door moves on to the next level with no way back; the
@@ -125,7 +130,7 @@ export const LEVELS = Object.freeze([
     artefact: null,
     coins: coins([[1, 1], [7, 1], [4, 8], [1, 15], [9, 5], [15, 1], [9, 15], [15, 15],
       [16, 10], [23, 15], [23, 7], [19, 4], [19, 1]]),
-    coinsRequired: 7,
+    coinsRequired: requiredCoins(13),
     decor: Object.freeze({
       rugs: [[102, 301, 73, 92], [446, 118, 46, 94]],
       banners: [[264, 52], [520, 157], [350, 233]],

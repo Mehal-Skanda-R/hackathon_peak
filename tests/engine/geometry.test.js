@@ -46,8 +46,8 @@ for (const [index, level] of LEVELS.entries()) {
       for (const coin of level.coins) {
         assert.equal(getHidingZone(coin.x, coin.y, 1), null, `coin ${tile(coin)} sits in cover`);
       }
-      // The door needs at least one coin and never more than the level holds.
-      assert.ok(level.coinsRequired >= 1 && level.coinsRequired <= level.coins.length,
+      // The door needs 50% of this level's coins, rounded up.
+      assert.equal(level.coinsRequired, Math.ceil(level.coins.length * 0.5),
         `${level.id} needs ${level.coinsRequired} of ${level.coins.length} coins`);
       // Only the final level carries the crystal; its door needs it.
       assert.equal(Boolean(level.artefact), index === LEVELS.length - 1);

@@ -172,11 +172,11 @@ export function initHUD() {
     coinChip.style.display = showChip ? 'flex' : 'none';
     coinChip.classList.toggle('done', coinsLeft === 0);
     if (state.doorOpen) doorNotice.classList.remove('show'); // stale "locked" notice
-    coinChip.innerHTML = coinsLeft > 0
-      ? `<span class="coin-dot"></span><b>${state.levelCoins} / ${coinGoal}</b>&nbsp;coins to open the door`
-      : state.needsArtefact && !state.hasArtefact
-        ? `<span class="coin-dot"></span><b>${state.levelCoins} / ${coinGoal}</b>&nbsp;· now take the crystal`
-        : '<b>✓ Door open</b>';
+    const note = coinsLeft > 0 ? `${coinsLeft} more to open the door`
+      : state.needsArtefact && !state.hasArtefact ? 'now take the crystal' : '✓ door open';
+    coinChip.innerHTML = `<span class="coin-row"><span class="coin-dot"></span><span class="coin-label">COINS</span>`
+      + `<b>${coinsLeft > 0 ? `${state.levelCoins} / ${coinGoal}` : state.levelCoins}</b></span>`
+      + `<span class="coin-note">${note}</span>`;
 
     // Readout
     $('hud-bpm').textContent = sensor.smoothedBpm ?? sensor.bpm ?? '--';

@@ -127,11 +127,16 @@ body.home-open { overflow: hidden; }
 .frame-actions { display: flex; gap: 8px; }
 
 /* Coin goal chip and locked-door notice over the canvas */
-#coin-chip { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 4; display: none; align-items: center; gap: 6px;
-  padding: 6px 14px; border: 1px solid #c6ae7e88; border-radius: 999px; background: #0b1218d9; color: #e8dcb8; font-size: 12px; letter-spacing: .4px; pointer-events: none; }
-#coin-chip b { color: #f2c14e; font-weight: 600; }
-#coin-chip .coin-dot { width: 10px; height: 10px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2b8, #f2c14e 45%, #8a5f17); }
-#coin-chip.done { border-color: #7ddcb0aa; } #coin-chip.done b { color: #8ff0c4; }
+#coin-chip { position: absolute; top: 12px; right: 16px; z-index: 4; display: none; flex-direction: column; align-items: flex-end; gap: 2px;
+  color: #f4ead0; pointer-events: none; text-shadow: 0 1px 2px #000, 0 0 10px #000c; font-variant-numeric: tabular-nums; }
+#coin-chip .coin-row { display: flex; align-items: center; gap: 8px; }
+#coin-chip .coin-label { font-size: 12px; font-weight: 600; letter-spacing: 2.5px; color: #d8c79c; }
+#coin-chip b { font-size: 22px; font-weight: 700; color: #f6c94f; letter-spacing: .5px; }
+#coin-chip .coin-dot { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 8px #f2c14e88;
+  background: radial-gradient(circle at 35% 35%, #fff2b8, #f2c14e 45%, #8a5f17); }
+#coin-chip .coin-note { font-size: 12px; color: #c9cdc3; letter-spacing: .3px; }
+#coin-chip.done b, #coin-chip.done .coin-note { color: #8ff0c4; }
+.museum-frame:fullscreen #coin-chip b { font-size: 28px; }
 #door-notice { position: absolute; left: 50%; bottom: 12%; transform: translate(-50%, 6px); z-index: 4; padding: 9px 16px; border: 1px solid #ff8a7a88;
   border-radius: 6px; background: #1a0d0ee6; color: #ffd2c9; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
 #door-notice.show { opacity: 1; transform: translate(-50%, 0); }
