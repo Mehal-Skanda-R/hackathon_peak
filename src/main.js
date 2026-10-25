@@ -3,14 +3,20 @@ import MuseumScene from './game/MuseumScene.js';
 import { getGameState, updateGameState } from './game/GameState.js';
 import PulseSystem from './game/PulseSystem.js';
 import PulseEffects from './game/PulseEffects.js';
+import VisibilitySystem from './game/VisibilitySystem.js';
 import { initHUD } from './ui/hud.js';
 
 class IntegrationScene extends Phaser.Scene {
     constructor() { super('IntegrationScene'); }
     create() {
         const museum = this.scene.get('MuseumScene');
+        const mapGeometry = museum.getMapGeometry();
+        
         const pulseSystem = new PulseSystem(museum);
+        const visibilitySystem = new VisibilitySystem(museum, mapGeometry);
+        // PulseEffects sits on top of the darkness
         const pulseEffects = new PulseEffects(museum);
+        pulseEffects.graphics.setDepth(51);
 
         museum.events.on('engine:state', (engineState) => {
             updateGameState(engineState);
@@ -20,9 +26,9 @@ class IntegrationScene extends Phaser.Scene {
             const state = getGameState();
             pulseSystem.update(delta, state.sensor, state);
             pulseEffects.update(delta);
+            visibilitySystem.update(delta);
         });
 
-        // Listen for the new HUD button
         window.addEventListener('hud-start-clicked', () => {
             if (getGameState().status === 'ready') museum.startRun();
         });
