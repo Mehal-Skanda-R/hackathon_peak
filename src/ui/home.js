@@ -78,6 +78,7 @@ export function initHome() {
         <button data-view="play" id="home-play"><span class="ico">▷</span><span id="home-play-label">PLAY</span></button>
         <button data-view="floors" class="active"><span class="ico">◇</span>FLOORS</button>
         <button data-view="intel"><span class="ico">☰</span>HOW TO PLAY</button>
+        <button data-view="sound" class="sound-btn" id="home-sound"><span class="ico">♪</span><span class="sound-label">SOUND ON</span></button>
       </nav>
       <p class="home-tag">Your heartbeat reveals the world.<br>It also reveals you.</p>
     </div>
@@ -153,6 +154,10 @@ export function initHome() {
   home.querySelector('.home-menu').addEventListener('click', event => {
     const b = event.target.closest('button');
     if (!b) return;
+    if (b.dataset.view === 'sound') {
+      window.dispatchEvent(new Event('hud-toggle-sound'));
+      return;
+    }
     if (b.dataset.view === 'play') {
       const state = getGameState();
       const resumable = state.status === 'paused' && state.pauseReason === 'Menu open';

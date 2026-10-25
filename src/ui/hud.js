@@ -91,6 +91,14 @@ export function initHUD() {
     if (document.body.classList.contains('home-open')) return; // home screen is up
     if ((event.key === 'f' || event.key === 'F') && !event.repeat && !event.ctrlKey && !event.metaKey) toggleFullscreen();
   });
+  $('sound-btn').addEventListener('click', () => fire('hud-toggle-sound'));
+  // Both sound buttons (frame + home) follow the mute state.
+  window.addEventListener('audio-muted-changed', event => {
+    for (const el of document.querySelectorAll('#sound-btn, #home-sound .sound-label')) {
+      el.textContent = el.id === 'sound-btn'
+        ? (event.detail ? '♪ SOUND OFF' : '♪ SOUND ON') : (event.detail ? 'SOUND OFF' : 'SOUND ON');
+    }
+  });
   $('menu-btn').addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen?.();
     fire('hud-open-menu');

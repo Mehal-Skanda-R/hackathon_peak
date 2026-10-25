@@ -7,6 +7,7 @@ import VisibilitySystem from './game/VisibilitySystem.js';
 import GuardSystem from './game/GuardSystem.js';
 import { initHUD } from './ui/hud.js';
 import { initHome } from './ui/home.js';
+import { initAudio, playDoorVictory, toggleMute } from './ui/audio.js';
 import { recordLevelComplete } from './ui/progress.js';
 import { LEVELS } from './game/config.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
@@ -54,7 +55,10 @@ class IntegrationScene extends Phaser.Scene {
 
         // Door: light the whole room for the animation, then auto-start the
         // next level once it is built (no way back, no extra Start click).
-        museum.events.on('engine:door', () => visibilitySystem?.revealAll(3000, 400));
+        museum.events.on('engine:door', () => {
+            visibilitySystem?.revealAll(3000, 400);
+            playDoorVictory();
+        });
         // Campaign progress: finishing a floor unlocks the next one.
         museum.events.on('engine:level-complete', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
         museum.events.on('engine:victory', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
@@ -195,6 +199,8 @@ const config = {
 
 initHUD();
 initHome();
+initAudio(); // after the HUD/home so their sound buttons get the saved mute state
+window.addEventListener('hud-toggle-sound', () => toggleMute());
 
 const game = new Phaser.Game(config);
 game.events.once('ready', () => {
