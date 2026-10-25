@@ -915,3 +915,8 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: full-screen Mission Failed / Heist Complete screens from the team artwork
   (baked stats/buttons erased; live stats + Replay level / Home / Restart from level 1 / Return
   to home). Run deaths tracked as `runDeaths` in GameState (`bc49d85`).
+- 25 Oct 2026 — Shyam's AI pre-presentation review + playtest (`f696679`): fixed connect-sensor
+  crash/stuck LIVE in browsers without Web Bluetooth (now a notice; cancelled connect returns to
+  TEST), R cancelling the door animation, R restarting the level behind the home screen,
+  Continue after finishing all 7 floors (now floor 01), and a floor-01 coin drawn on the entrance.
+  Full flow (home -> 7 floors -> Heist Complete -> home) played in Chromium with no page errors.
