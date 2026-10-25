@@ -334,6 +334,47 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Latest independent integration check — 25 Oct 2026, 11:04 IST (Soham)
+
+Audited actual `main` code at `f257c43` in a separate clean checkout, plus GitHub PR
+states. All four core modules are present/connected on main; **do not treat the
+reported integration milestone as demo-ready acceptance yet**. Art PR #3 is still open.
+
+Fresh evidence:
+- `node --test tests/guards/guards.test.js tests/engine/geometry.test.js`: **18 passed**
+  (14 guard + 4 map/movement checks).
+- Standard `npm ci`: **failed**, ERESOLVE: Vitest 5.0.5 requires Vite >=6.4 while the
+  root locks Vite 5.4.21. Using `npm ci --legacy-peer-deps` only in the audit checkout
+  allowed a build: `npm run build` **passed**. Root `npm test` still **failed** at
+  Vitest startup (`ERR_PACKAGE_PATH_NOT_EXPORTED`, Vite `./module-runner`).
+- Chromium initial page: one canvas, two patrol guards, mode TEST, BPM null,
+  calibrated false, stale true. After 1.5 s the test stream still had no reading.
+- Clicking Start with that state entered PLAYING and moved guards. This bypasses
+  the documented fresh/calibrated input gate.
+- Manually switching the sensor facade live → test started test readings (~72 BPM)
+  and pulses; normal initial TEST mode never starts its timer because initial mode
+  is already test and the setter returns early. There is no normal HUD test-mode action.
+- Switching to disconnected LIVE input during play left status PLAYING with
+  BPM null/stale true. Automatic sensor-loss pause is not wired into main yet.
+- Restart returned the engine to ready but retained old guard positions; darkness
+  and guard display objects disappeared. Starting again caused browser error
+  `Cannot read properties of null (reading 'setSize')`. main creates external
+  Guard/FX/Visibility instances only once; rebuild/dispose them on engine lifecycle.
+
+Priorities/owners (findings, not unauthorized contract changes):
+1. Mehal: align root Vite/Vitest and make the documented install/test commands work.
+2. Shubranshu + Mehal: initialize TEST readings through the normal startup/UI path.
+3. Mehal + Shubranshu: gate Start/Resume; pause on disconnected/stale input; expose
+   usable recovery/test controls. PulseSystem currently reads raw bpm; adopt the
+   agreed processed cadence input as part of the sensor integration check.
+4. Mehal + engine/guard owners as needed: destroy/recreate external run systems and
+   reset guards, timers, overlays and listeners on restart; test two complete runs.
+5. Mehal: review/merge art PR #3. Team: actual sensor verification, full run,
+   deployed HTTPS check, balance and recording remain unverified by this audit.
+
+No source files or dependency versions were changed during this status check.
+
+
 Owners report evidence here. Feature-branch implementation is not merged/integrated
 completion. Prior prototype tests do not count; the engine results below are fresh.
 
