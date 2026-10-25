@@ -16,6 +16,8 @@ export const GUARD_TUNING = Object.freeze({
   chaseThreshold: 0.75,
   catchDistance: 22,        // center distance, with line of sight, during chase
   lostSightGiveUpMs: 3000,  // chase without sight this long -> return
+  hiddenGiveUpMs: 3000,     // player hidden in cover this long -> guard leaves
+  calmDownMs: 5000,         // then suspicion drains linearly to 0 over this long
   investigateWaitMs: 1500,  // pause at the pulse origin before returning
 });
 
@@ -85,6 +87,8 @@ export default class Guard {
     this.lostSightMs = 0;
     this.waitMs = 0;
     this.caught = false;
+    this.hiddenMs = 0;
+    this.calmRate = 0; // suspicion/second while calming down after losing a hidden player
     this.advanceWaypoint();
   }
 
@@ -97,6 +101,10 @@ export default class Guard {
   // Returns true when the pulse raised this guard's suspicion.
   handlePulse(pulse) {
     if (Math.hypot(this.x - pulse.x, this.y - pulse.y) > pulse.radius) return false;
+    // A guard that already gave up on a hidden player ignores pulses from cover;
+    // a pulse from out in the open ends the calm-down and counts normally.
+    if (this.calmRate && pulse.hidingAtEmission) return false;
+    this.calmRate = 0;
     const gain = this.tuning.suspicionPerPulse
       * (pulse.hidingAtEmission ? this.tuning.hidingMultiplier : 1);
     this.suspicion = Math.min(1, this.suspicion + gain);
@@ -114,7 +122,17 @@ export default class Guard {
   // Returns true once, on the update where this guard catches the player.
   update(deltaMs, player) {
     const seconds = Math.max(0, deltaMs) / 1000;
-    if (this.state !== 'chase') {
+    this.hiddenMs = player?.hiding ? this.hiddenMs + Math.max(0, deltaMs) : 0;
+    // Hidden in cover long enough: an alerted guard leaves and calms down to 0
+    // over calmDownMs (team decision, context.md section 4).
+    if (this.hiddenMs >= this.tuning.hiddenGiveUpMs && this.suspicion > 0 && !this.calmRate) {
+      this.calmRate = this.suspicion / (this.tuning.calmDownMs / 1000);
+      if (this.state === 'chase' || this.state === 'suspicious') this.enterReturn();
+    }
+    if (this.calmRate) {
+      this.suspicion = Math.max(0, this.suspicion - this.calmRate * seconds);
+      if (this.suspicion === 0) this.calmRate = 0;
+    } else if (this.state !== 'chase') {
       this.suspicion = Math.max(0, this.suspicion - this.tuning.suspicionDecayPerSecond * seconds);
     }
     switch (this.state) {
@@ -160,7 +178,9 @@ export default class Guard {
     // Without sight, head for where the player was last seen (no wall-hacks).
     if (!this.path.length && this.lastSeen) this.setDestination(this.lastSeen);
     const arrived = this.followPath(this.tuning.chaseSpeed * seconds);
-    if (this.lostSightMs >= this.tuning.lostSightGiveUpMs || (arrived && this.lastSeenReached())) {
+    // A hidden player is searched for until the hidden rule (update) sends the guard away.
+    if (!player?.hiding
+      && (this.lostSightMs >= this.tuning.lostSightGiveUpMs || (arrived && this.lastSeenReached()))) {
       this.suspicion = Math.min(this.suspicion, this.tuning.chaseThreshold - 0.25);
       this.enterReturn();
     }
@@ -177,6 +197,7 @@ export default class Guard {
 
   enterChase(origin) {
     this.state = 'chase';
+    this.calmRate = 0;
     this.lastSeen = origin;
     this.lostSightMs = 0;
     this.setDestination(origin);

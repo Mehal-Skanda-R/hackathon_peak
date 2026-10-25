@@ -22,7 +22,25 @@ export const GUARD_ROUTES = Object.freeze({
 const STATE_COLORS = Object.freeze({
   patrol: 0xffd84a, suspicious: 0xffa133, chase: 0xff4d5e, return: 0xffd84a,
 });
-const STATE_ICONS = Object.freeze({ patrol: '', suspicious: '?', chase: '!', return: '' });
+// '?' colour by suspicion: yellow (low) -> orange -> red (chase level), so a guard
+// that lost a hidden player visibly cools down red -> yellow -> no icon.
+const ICON_STEPS = 12;
+function suspicionColor(suspicion) {
+  const t = Math.min(1, suspicion / GUARD_TUNING.chaseThreshold);
+  const lerp = (a, b, u) => Math.round(a + (b - a) * u);
+  const [r, g, b] = t < 0.5
+    ? [lerp(0xff, 0xff, t * 2), lerp(0xd8, 0xa1, t * 2), lerp(0x4a, 0x33, t * 2)]
+    : [lerp(0xff, 0xff, t * 2 - 1), lerp(0xa1, 0x4d, t * 2 - 1), lerp(0x33, 0x5e, t * 2 - 1)];
+  return (r << 16) | (g << 8) | b;
+}
+function guardIcon(guard) {
+  if (guard.state === 'chase') return { text: '!', color: STATE_COLORS.chase };
+  const alerted = guard.state === 'suspicious' || guard.state === 'return' || guard.calmRate;
+  if (!alerted || guard.suspicion < 0.01) return { text: '', color: STATE_COLORS.patrol };
+  // Quantised so the text texture is only redrawn a few times while cooling down.
+  const level = Math.ceil(Math.min(1, guard.suspicion / GUARD_TUNING.chaseThreshold) * ICON_STEPS) / ICON_STEPS;
+  return { text: '?', color: suspicionColor(level * GUARD_TUNING.chaseThreshold) };
+}
 const SPRITE_SIZE = 40;      // visual only; the logic body stays tuning.bodySize
 const STRIDE_PX = 8;         // walking-frame swap distance
 
@@ -193,12 +211,13 @@ export default class GuardSystem {
         view.alpha = alpha;
         for (const part of this.viewParts(view)) part.setAlpha(alpha);
       }
-      // Text restyles redraw and re-upload the text texture, so only on state change.
-      if (guard.state !== view.state) {
-        view.state = guard.state;
-        view.meter.setFillStyle(STATE_COLORS[guard.state]);
-        view.icon.setText(STATE_ICONS[guard.state])
-          .setColor(guard.state === 'chase' ? '#ff4d5e' : '#ffa133');
+      // Text restyles redraw and re-upload the text texture, so only on change.
+      const icon = guardIcon(guard);
+      const key = `${icon.text}:${icon.color}`;
+      if (key !== view.iconKey) {
+        view.iconKey = key;
+        view.meter.setFillStyle(icon.text ? icon.color : STATE_COLORS[guard.state]);
+        view.icon.setText(icon.text).setColor(`#${icon.color.toString(16).padStart(6, '0')}`);
       }
     }
   }

@@ -149,6 +149,76 @@ test('stepping out of cover makes the player catchable again', () => {
   assert.equal(scene.events.emitted.filter(e => e.name === GUARD_EVENTS.CAUGHT).length, 1);
 });
 
+test('hidden 3 s: the guard leaves, then suspicion drains to 0 over 5 s', () => {
+  const guard = new Guard({ id: 'g', route: [at(10, 10), at(14, 10)], map: MAP_GEOMETRY });
+  const player = { ...at(12, 10), hiding: false };
+  for (let i = 0; i < 4; i++) guard.handlePulse({ ...pulse(player), radius: 300 });
+  assert.equal(guard.state, 'chase');
+  assert.equal(guard.suspicion, 1);
+  player.hiding = true;
+  const step = (ms) => { for (let t = 0; t < ms; t += 10) guard.update(10, player); };
+  step(2900);
+  assert.equal(guard.state, 'chase', 'still searching before 3 s');
+  step(200);
+  assert.equal(guard.state, 'return', 'leaves after 3 s hidden');
+  const atLeave = guard.suspicion;
+  step(2400);   // ~2.5 s into the 5 s calm-down
+  assert.ok(Math.abs(guard.suspicion - atLeave / 2) < 0.04, `half-way after 2.5 s (${guard.suspicion})`);
+  step(2300);   // calming started at 3.0 s; now at ~4.9 s of 5
+  assert.ok(guard.suspicion > 0 && guard.suspicion < 0.06, `almost calm just before 5 s (${guard.suspicion})`);
+  step(200);
+  assert.equal(guard.suspicion, 0, 'calm after 5 s');
+});
+
+test('pulses from cover do not bring a calming guard back; open pulses do', () => {
+  const guard = new Guard({ id: 'g', route: [at(10, 10), at(14, 10)], map: MAP_GEOMETRY });
+  const player = { ...at(12, 10), hiding: false };
+  for (let i = 0; i < 4; i++) guard.handlePulse({ ...pulse(player), radius: 300 });
+  player.hiding = true;
+  for (let t = 0; t < 3100; t += 10) guard.update(10, player);
+  assert.equal(guard.state, 'return');
+  const before = guard.suspicion;
+  assert.equal(guard.handlePulse({ ...pulse(player), radius: 300, hidingAtEmission: true }), false);
+  assert.equal(guard.suspicion, before);
+  assert.equal(guard.state, 'return');
+  for (let t = 0; t < 5000; t += 10) guard.update(10, player);
+  assert.equal(guard.suspicion, 0, 'still calm by 8 s despite hidden pulses');
+  player.hiding = false;
+  assert.equal(guard.handlePulse({ ...pulse(player), radius: 300 }), true);
+  assert.equal(guard.state, 'suspicious');
+});
+
+test('leaving cover before 3 s resets the hidden timer', () => {
+  const guard = new Guard({ id: 'g', route: [at(10, 10)], map: MAP_GEOMETRY });
+  const player = { ...at(12, 10), hiding: true };
+  for (let i = 0; i < 3; i++) guard.handlePulse({ ...pulse(player), radius: 300 });
+  for (let t = 0; t < 2000; t += 10) guard.update(10, player);
+  player.hiding = false; guard.update(10, player); player.hiding = true;
+  for (let t = 0; t < 2000; t += 10) guard.update(10, player);
+  assert.equal(guard.calmRate, 0, 'never 3 s in a row hidden');
+});
+
+test('icon: ! while chasing, then ? fading red -> yellow -> none while calming', () => {
+  const scene = drawingScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  const icon = scene.objects[2];               // guard-gallery's icon
+  const g = system.getStates()[0];
+  const player = { x: g.x + 40, y: g.y, hiding: false };
+  for (let i = 0; i < 4; i++) system.handlePulse(pulse(player));
+  run(system, 50, player);
+  assert.equal(icon.text, '!');
+  player.hiding = true;
+  run(system, 3100, player);
+  assert.equal(icon.text, '?');
+  const red = parseInt(icon.color.slice(1), 16);
+  run(system, 3000, player);
+  const later = parseInt(icon.color.slice(1), 16);
+  assert.equal(icon.text, '?');
+  assert.ok((later >> 8 & 0xff) > (red >> 8 & 0xff), `greener (more yellow) as it calms: ${icon.color}`);
+  run(system, 2500, player);
+  assert.equal(icon.text, '', 'no icon once calm');
+});
+
 test('a pulse alone never catches; patrol/suspicious guards never catch', () => {
   const scene = fakeScene();
   const system = new GuardSystem(scene, MAP_GEOMETRY);
@@ -224,6 +294,9 @@ function drawingScene() {
       destroy() { this.destroyCalls++; this.scene = null; } };
     const live = name => function () { if (!this.scene) throw new TypeError(`Cannot read properties of null (reading '${name}')`); return this; };
     for (const m of ['setPosition', 'setSize', 'setTexture', 'setText', 'setColor', 'setFillStyle']) o[m] = live(m);
+    const setText = o.setText, setColor = o.setColor;
+    o.setText = function (t) { setText.call(this); this.text = t; return this; };
+    o.setColor = function (c) { setColor.call(this); this.color = c; return this; };
     for (const m of ['setDepth', 'setOrigin', 'setStrokeStyle']) o[m] = function () { return this; };
     o.setAlpha = function (a) { this.alpha = a; return this; };
     objects.push(o); return o;
