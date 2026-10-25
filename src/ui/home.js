@@ -3,7 +3,8 @@ import { getGameState } from '../game/GameState.js';
 import { loadProgress } from './progress.js';
 
 // Home screen: the team's castle artwork (public/assets/home/home-screen.webp)
-// with invisible buttons laid exactly over its labels. Presentation only;
+// with buttons laid over its labels. Progress is live UI over the artwork;
+// the image's example counts/locks must never override saved progress. Presentation only;
 // buttons dispatch window events that src/main.js turns into engine calls.
 const ART = { src: '/assets/home/home-screen.webp', width: 1600, height: 901 };
 
@@ -31,7 +32,9 @@ export function initHome() {
   home.id = 'home';
   home.setAttribute('aria-label', 'Heartbeat Heist home');
   const floorButtons = LEVELS.map((level, i) => `<button class="hotspot floor-spot" data-level="${i + 1}"
-    style="${place(SPOTS[`floor${i + 1}`])}" aria-label="Floor ${i + 1}: ${level.name}"></button>`).join('');
+    style="${place(SPOTS[`floor${i + 1}`].map((value, edge) => value + (edge < 2 ? -2 : 2)))}" aria-label="Floor ${i + 1}: ${level.name}">
+    <span class="floor-label"><small>FLOOR ${String(i + 1).padStart(2, '0')}</small>${level.name}</span>
+    <span class="floor-state" aria-hidden="true"></span></button>`).join('');
   home.innerHTML = `
     <div class="home-art">
       <img src="${ART.src}" alt="" draggable="false">
@@ -40,6 +43,14 @@ export function initHome() {
       <button class="hotspot" id="home-howto" style="${place(SPOTS.howto)}" aria-label="How to play"></button>
       <button class="hotspot" id="home-enter" style="${place(SPOTS.enter)}" aria-label="Enter floor"></button>
       ${floorButtons}
+      <div class="home-progress" aria-label="Campaign progress">
+        <h3 id="home-selected-floor"></h3>
+        <p>Progress <strong id="home-progress-count"></strong></p>
+        <div class="home-progress-bar" role="progressbar" aria-label="Completed floors" aria-valuemin="0"
+          aria-valuemax="${LEVELS.length}" aria-valuenow="0"><span></span></div>
+        <p>Best coins <strong id="home-best-coins"></strong></p>
+        <p class="home-progress-note">Finish floors to unlock the next.</p>
+      </div>
       <div class="home-toast" id="home-toast" role="status" aria-live="polite"></div>
       <div class="home-modal" id="home-modal" hidden>
         <div class="home-modal-card">
@@ -73,10 +84,9 @@ export function initHome() {
     return s.status === 'paused' && s.pauseReason === 'Menu open';
   };
 
-  $('home-play').addEventListener('click', () => {
-    play(resumable() ? getGameState().level : loadProgress().unlocked);
-  });
-  $('home-enter').addEventListener('click', () => play(loadProgress().unlocked));
+  const continueLevel = () => resumable() ? getGameState().level : loadProgress().unlocked;
+  $('home-play').addEventListener('click', () => play(continueLevel()));
+  $('home-enter').addEventListener('click', () => play(continueLevel()));
   $('home-floors').addEventListener('click', () => toast('Pick a floor on the right.'));
   $('home-howto').addEventListener('click', () => { $('home-modal').hidden = false; $('home-modal-close').focus(); });
   $('home-modal-close').addEventListener('click', () => { $('home-modal').hidden = true; });
@@ -91,9 +101,27 @@ export function initHome() {
   }
 
   const render = () => {
-    const { unlocked } = loadProgress();
+    const { unlocked, completed, bestCoins } = loadProgress();
+    const selected = continueLevel();
+    const floor = String(selected).padStart(2, '0');
+    $('home-play').innerHTML = `<span aria-hidden="true">▷</span><span>CONTINUE<small>FLOOR ${floor}</small></span>`;
+    $('home-play').setAttribute('aria-label', `Continue floor ${floor}`);
+    $('home-enter').textContent = `Enter floor ${floor} ↗`;
+    $('home-enter').setAttribute('aria-label', `Enter floor ${floor}`);
+    $('home-selected-floor').textContent = `FLOOR ${floor} · ${LEVELS[selected - 1].name}`;
+    $('home-progress-count').textContent = `${completed} / ${LEVELS.length}`;
+    $('home-best-coins').textContent = String(bestCoins);
+    const bar = home.querySelector('.home-progress-bar');
+    bar.setAttribute('aria-valuenow', String(completed));
+    bar.firstElementChild.style.width = `${completed / LEVELS.length * 100}%`;
     for (const button of home.querySelectorAll('.floor-spot')) {
-      button.classList.toggle('locked', Number(button.dataset.level) > unlocked);
+      const level = Number(button.dataset.level);
+      const locked = level > unlocked;
+      button.classList.toggle('locked', locked);
+      button.classList.toggle('selected', level === selected);
+      button.classList.toggle('completed', level <= completed);
+      button.setAttribute('aria-current', level === selected ? 'step' : 'false');
+      button.querySelector('.floor-state').textContent = locked ? '🔒' : level === selected ? '▷' : level <= completed ? '✓' : '';
     }
   };
   const show = () => { render(); $('home-modal').hidden = true; document.body.classList.add('home-open'); };

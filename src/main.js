@@ -82,6 +82,8 @@ class IntegrationScene extends Phaser.Scene {
             museum.startAtLevel(level - 1);
         });
         window.addEventListener('hud-open-menu', () => {
+            // A door transition must finish before opening another screen.
+            if (getGameState().status === 'transition') return;
             if (getGameState().status === 'playing') museum.setPaused(true, 'Menu open');
             window.dispatchEvent(new Event('hud-show-home'));
         });

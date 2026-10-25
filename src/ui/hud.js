@@ -134,6 +134,7 @@ export function initHUD() {
   const setClass = (el, cls) => { el.classList.remove('ok', 'warn', 'bad'); if (cls) el.classList.add(cls); };
 
   subscribeToGameState((state) => {
+    $('menu-btn').disabled = state.status === 'transition';
     const sensor = state.sensor;
     const usable = isSensorUsable(sensor);
     const live = sensor.mode === 'live';
