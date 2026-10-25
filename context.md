@@ -480,7 +480,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | Soham | Engine merged; art PR #3 awaiting review | Support art integration; playtest walls/cover/objectives and two consecutive runs | [Art PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), `db5fd09`; 4 geometry + 5 Chromium checks, fixture/root builds and TEST-mode smoke passed |
 | Shubranshu | Sensor code merged; hardware unverified | Fix normal TEST startup with Mehal; verify state/calibration/loss and actual device | Device/model and live results pending |
 | Shyam | Guards integrated on main; integrated-play + restart verified; disposal fix in [PR #4](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/4) | Mehal merges PR #4; retest after TEST-startup/gating fixes | `feature/guard-ai` @ `9f0c238`; 18 guard tests passed; Chromium playthrough of combined game (two runs) passed, no errors |
-| Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commits ba8eb96 to ca21070 |
+| Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commit dbd473e (all PRs merged, gates active, 22 tests passing) |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
 - Code: `feature/game-engine` at `8a15f7ed5dc1e4c0a4daa6fc2dd60b3b8bb3b924`,
