@@ -33,12 +33,27 @@ function notifySubscribers() {
   listeners.forEach((callback) => callback(snapshot));
 }
 
+// Never leave a calibrated/usable BPM behind once the signal is gone.
+function clearReadings() {
+  currentState.stale = true;
+  currentState.bpm = null;
+  currentState.smoothedBpm = null;
+  currentState.calibrated = false;
+  currentState.baselineBpm = 0;
+  currentState.pulseDelta = 0;
+}
+
 function startWatchdog() {
   stopWatchdog();
   watchdogTimer = setInterval(() => {
     const now = performance.now();
     const stale = signalProcessor.isStale(now);
-    if (stale !== currentState.stale) {
+    if (stale && currentState.calibrated) {
+      // Signal loss restarts calibration; it re-runs on the next fresh samples.
+      signalProcessor.reset();
+      clearReadings();
+      notifySubscribers();
+    } else if (stale !== currentState.stale) {
       currentState.stale = stale;
       notifySubscribers();
     }
@@ -68,25 +83,18 @@ function handleIncomingReading(rawBpm) {
   notifySubscribers();
 }
 
+// Heart Rate Measurement (0x2A37): flags bit 0 selects uint8 or little-endian
+// uint16 BPM at offset 1. Returns null for malformed packets.
+export function parseHeartRateMeasurement(dataView) {
+  if (!dataView || dataView.byteLength < 2) return null;
+  const is16Bit = (dataView.getUint8(0) & 0x01) === 1;
+  if (is16Bit) return dataView.byteLength >= 3 ? dataView.getUint16(1, true) : null;
+  return dataView.getUint8(1);
+}
+
 function handleCharacteristicValueChanged(event) {
-  const dataView = event.target.value;
-  if (!dataView || dataView.byteLength < 2) return;
-
-  const flags = dataView.getUint8(0);
-  const is16Bit = (flags & 0x01) === 1;
-
-  let bpm = null;
-  if (is16Bit) {
-    if (dataView.byteLength >= 3) {
-      bpm = dataView.getUint16(1, true);
-    }
-  } else {
-    bpm = dataView.getUint8(1);
-  }
-
-  if (bpm !== null) {
-    handleIncomingReading(bpm);
-  }
+  const bpm = parseHeartRateMeasurement(event.target.value);
+  if (bpm !== null) handleIncomingReading(bpm);
 }
 
 export async function connectHeartRate() {
@@ -125,9 +133,9 @@ export async function connectHeartRate() {
 
 function onDeviceDisconnected() {
   currentState.connected = false;
-  currentState.stale = true;
   currentState.error = 'Sensor disconnected';
   signalProcessor.reset();
+  clearReadings();
   notifySubscribers();
 }
 
@@ -147,10 +155,8 @@ export function disconnectHeartRate() {
   testSensor.stop();
 
   currentState.connected = false;
-  currentState.stale = true;
-  currentState.bpm = null;
-  currentState.smoothedBpm = null;
   signalProcessor.reset();
+  clearReadings();
 
   notifySubscribers();
 }
