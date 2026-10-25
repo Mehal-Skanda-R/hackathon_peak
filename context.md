@@ -785,3 +785,12 @@ context commit verified on main (or publication pending/failed).
   (Phaser Scale.FIT). No game-logic change. Note: the Crossbreed agreement's LIVE-first
   release configuration (TEST separated from the judged experience) is still NOT done:
   the page still starts in TEST. Needs a team decision on how TEST is reached (e.g. ?dev).
+- 25 Oct 2026 — Shyam reported a black screen after reset on the deploy. Cause: R (and Play
+  again when input is not usable) correctly returns to ready, where no pulses fire, so the
+  dark canvas looked dead (and Start sat in the side panel, hidden in full screen). Fix
+  `0a806c6`: an on-canvas screen for ready / waiting-for-input / paused (with Start, Resume,
+  Connect sensor) as well as caught/victory. Restart-to-ready contract unchanged.
+- Soham's `tests/engine/combined-heist.cjs` is timing-sensitive: in slow headless Chromium
+  (~20-25 fps) key release overshoots corners by up to ~10 px and the walker can wedge on a
+  wall corner (e.g. return leg toward (464,208)). Seen on main with and without `0a806c6`;
+  not a game defect. Soham may want a wider stop tolerance or per-frame key release.
