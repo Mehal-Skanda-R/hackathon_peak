@@ -752,3 +752,6 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: guards now use yellow sprites in the thief's art style (cap, badge,
   torch, facing/stride) instead of rectangles; '?' suspicious / '!' chase icons and a
   state-coloured suspicion bar (`e42b0b1`). Visual only; guard logic unchanged.
+- 25 Oct 2026 — Shyam: end-of-round screen. Caught/victory now show CAUGHT! / YOU ESCAPED!
+  over the game with PLAY AGAIN (full scene restart, auto-starts if the sensor is usable)
+  and an 'or press R' hint. Verified both outcomes in Chromium; one canvas, no errors.
