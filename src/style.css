@@ -99,3 +99,75 @@ button:focus-visible, a:focus-visible { outline: 2px solid #8bd9d0; outline-offs
 
 @media (max-width: 900px) { .layout { grid-template-columns: minmax(0,1fr) 220px; gap: 20px; }.shell { padding: 0 20px 20px; }.edition { font-size: 7px; }h1 { font-size: 24px; }h2 { font-size: 22px; } }
 @media (max-width: 700px) { .layout { grid-template-columns: minmax(0,1fr); }.edition { display: none; }h1 { font-size: 20px; }.frame-bottom span:nth-child(2) { display: none; } }
+
+/* ---- Home screen (src/ui/home.js) ---- */
+#home { display: none; position: fixed; inset: 0; z-index: 200; overflow: auto;
+  grid-template-columns: 240px minmax(320px, 1fr) minmax(0, 560px); gap: 12px; padding: 28px 36px;
+  background: radial-gradient(ellipse at 30% 18%, #1d2c3f 0%, #0d1520 45%, #06090d 100%); color: #e4e6de; }
+body.home-open #home { display: grid; }
+body.home-open { overflow: hidden; }
+.home-left { display: flex; flex-direction: column; gap: 40px; padding-top: 8px; }
+.home-logo { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 600; letter-spacing: 6px; line-height: 1.25; }
+.home-logo svg { width: 56px; height: 40px; fill: none; stroke: #72e0d6; stroke-width: 1.8; filter: drop-shadow(0 0 6px #72e0d6aa); }
+.home-menu { display: flex; flex-direction: column; gap: 10px; }
+.home-menu button { display: flex; align-items: center; gap: 16px; padding: 14px 18px; text-align: left; font-size: 15px; letter-spacing: 4px;
+  color: #c9cdc3; background: transparent; border: 1px solid transparent; border-radius: 4px; }
+.home-menu button .ico { width: 18px; color: #b9a36b; font-size: 18px; text-align: center; }
+.home-menu button:hover { color: #fff; background: #ffffff0a; }
+.home-menu button.active { color: #f4e2b4; border-color: #c6ae7e; background: linear-gradient(90deg, #c6ae7e33, #c6ae7e05); box-shadow: 0 0 18px #c6ae7e33; }
+#home-play { color: #f4e2b4; }
+.home-tag { margin-top: auto; font: italic 14px/1.6 Georgia, serif; color: #7f908f; }
+.home-stage { min-width: 0; display: flex; align-items: center; justify-content: center; }
+.castle { width: 100%; max-height: calc(100vh - 56px); }
+.castle .stars circle { fill: #dfe8ff; }
+.castle .moon { fill: #e6edf5; filter: drop-shadow(0 0 18px #cfe0ffaa); }
+.castle .cloud { fill: #3a4a5c; opacity: .35; }
+.castle .mountains { fill: #0b1219; }
+.castle .turret, .castle .floor-body { fill: url(#stone); stroke: #0a0f13; stroke-width: 2; }
+.castle .roof { fill: #121a22; stroke: #2b3946; stroke-width: 2; }
+.castle .roof.small { fill: #18222c; }
+.castle .flag { fill: #8b2b35; stroke: #4a3a2a; stroke-width: 2; }
+.castle .slit { fill: #f2b65a; opacity: .7; }
+.castle .floor-glow { fill: #0b1015; }
+.castle .arch { fill: #070a0d; stroke: #2c3640; stroke-width: 1; }
+.castle .floor-ledge { fill: #2f3c47; }
+.castle .floor.lit .floor-glow { fill: url(#warm); opacity: .38; }
+.castle .floor.lit .arch { fill: #ffcf73; stroke: #8a5a20; filter: drop-shadow(0 0 6px #ffb54a); }
+.castle .floor.selected .floor-body { stroke: #f0d48a; stroke-width: 3; }
+.castle .floor.selected .floor-glow { opacity: .65; }
+.castle .stairs { fill: #1a232b; stroke: #2e3a45; }
+.castle .balustrade { fill: #222c35; }
+.castle .baluster { fill: #1a232b; stroke: #2e3a45; }
+.home-right { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.home-series { margin: 6px 0 0; text-align: right; font-size: 11px; letter-spacing: 4px; color: #8c968b; }
+.home-columns { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 18px; align-items: start; }
+.floor-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.floor-card { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 16px; text-align: left;
+  background: #0b1218d9; border: 1px solid #3a4651; border-radius: 6px; color: #dcdfd6; }
+.floor-card .floor-text { flex: 1; font: 17px Georgia, serif; }
+.floor-card small { display: block; font: 600 10px 'Segoe UI', system-ui, sans-serif; letter-spacing: 3px; color: #c9cdc3; margin-bottom: 4px; }
+.floor-card .floor-dots { width: 18px; height: 2px; background: repeating-linear-gradient(90deg, #c6ae7e 0 2px, transparent 2px 6px); opacity: .6; }
+.floor-card .floor-state { width: 22px; text-align: center; font-size: 18px; color: #f0d48a; }
+.floor-card .floor-state svg { width: 18px; height: 18px; fill: #7d8790; stroke: #7d8790; stroke-width: 1.6; }
+.floor-card.open:hover, .floor-card.done:hover { border-color: #c6ae7e; background: #16202a; }
+.floor-card.selected { border-color: #f0d48a; box-shadow: 0 0 18px #f0d48a33; background: linear-gradient(90deg, #c6ae7e26, #0b1218d9); }
+.floor-card.locked { color: #77818a; cursor: not-allowed; }
+.floor-card.locked small { color: #6a737b; }
+.home-panel { padding: 18px; border: 1px solid #3a4651; border-radius: 10px; background: #0b1218cc; }
+.home-panel h3 { font-size: 12px; letter-spacing: 3px; color: #e4e6de; margin: 0 0 14px; }
+.panel-castle { text-align: center; font-size: 40px; color: #c6ae7e; opacity: .6; margin-bottom: 8px; }
+.panel-label { margin: 10px 0 2px; font-size: 13px; color: #9aa6a5; }
+.panel-value { margin: 0; font: 18px Georgia, serif; color: #f0d48a; }
+.panel-bar { height: 8px; margin: 8px 0 6px; border-radius: 4px; background: #1d2730; border: 1px solid #3a4651; overflow: hidden; }
+.panel-bar span { display: block; height: 100%; background: linear-gradient(90deg, #c6ae7e, #f0d48a); }
+.panel-note { font-size: 12px; line-height: 1.6; color: #9aa6a5; margin: 14px 0; }
+.home-panel .primary { font-size: 12px; }
+.intel { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.6; color: #b6bfbd; display: grid; gap: 8px; }
+.intel b { color: #f0d48a; font-weight: 600; }
+.frame-actions { display: flex; gap: 8px; }
+@media (max-width: 1150px) { #home { grid-template-columns: 200px minmax(0, 1fr); } .home-stage { display: none; } }
+@media (max-width: 700px) {
+  #home { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .home-left { gap: 16px; } .home-menu { flex-direction: row; flex-wrap: wrap; } .home-menu button { padding: 10px 12px; letter-spacing: 2px; font-size: 12px; }
+  .home-tag { display: none; } .home-columns { grid-template-columns: minmax(0, 1fr); } .home-series { text-align: left; }
+}

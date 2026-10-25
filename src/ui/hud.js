@@ -88,7 +88,12 @@ export function initHUD() {
   };
   fullscreenBtn.addEventListener('click', toggleFullscreen);
   window.addEventListener('keydown', event => {
+    if (document.body.classList.contains('home-open')) return; // home screen is up
     if ((event.key === 'f' || event.key === 'F') && !event.repeat && !event.ctrlKey && !event.metaKey) toggleFullscreen();
+  });
+  $('menu-btn').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    fire('hud-open-menu');
   });
   document.addEventListener('fullscreenchange', () => {
     fullscreenBtn.innerHTML = document.fullscreenElement

@@ -221,6 +221,15 @@ export default class MuseumScene extends Phaser.Scene {
     this.scene.restart({ level: this.levelIndex, coinsBefore: this.coinsBefore });
   }
 
+  // Home screen floor selection: load a level directly (fresh coin count).
+  startAtLevel(index) {
+    if (this.restartPending) return;
+    this.restartPending = true;
+    this.player.update(false);
+    this.physics.world.pause();
+    this.scene.restart({ level: index, coinsBefore: 0 });
+  }
+
   // After the final victory: start the whole game again from level 1.
   restartGame() {
     if (this.restartPending) return;

@@ -6,6 +6,9 @@ import PulseEffects from './game/PulseEffects.js';
 import VisibilitySystem from './game/VisibilitySystem.js';
 import GuardSystem from './game/GuardSystem.js';
 import { initHUD } from './ui/hud.js';
+import { initHome } from './ui/home.js';
+import { recordLevelComplete } from './ui/progress.js';
+import { LEVELS } from './game/config.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
 
 class IntegrationScene extends Phaser.Scene {
@@ -52,6 +55,30 @@ class IntegrationScene extends Phaser.Scene {
         // Door: light the whole room for the animation, then auto-start the
         // next level once it is built (no way back, no extra Start click).
         museum.events.on('engine:door', () => visibilitySystem?.revealAll(3000, 400));
+        // Campaign progress: finishing a floor unlocks the next one.
+        museum.events.on('engine:level-complete', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
+        museum.events.on('engine:victory', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
+
+        // Home screen: play a floor (or continue the paused one); menu pauses play.
+        const homeOpen = () => document.body.classList.contains('home-open');
+        window.addEventListener('hud-play-level', (event) => {
+            const level = event.detail;
+            const state = getGameState();
+            window.dispatchEvent(new Event('hud-hide-home'));
+            if (state.status === 'paused' && state.pauseReason === 'Menu open' && state.level === level) {
+                if (isSensorUsable(state.sensor)) museum.setPaused(false);
+                return;
+            }
+            museum.events.once('engine:ready', () => {
+                if (isSensorUsable(getGameState().sensor)) museum.startRun();
+            });
+            museum.startAtLevel(level - 1);
+        });
+        window.addEventListener('hud-open-menu', () => {
+            if (getGameState().status === 'playing') museum.setPaused(true, 'Menu open');
+            window.dispatchEvent(new Event('hud-show-home'));
+        });
+
         museum.events.on('engine:level-complete', () => {
             museum.events.once('engine:ready', () => {
                 if (isSensorUsable(getGameState().sensor)) museum.startRun();
@@ -96,6 +123,7 @@ class IntegrationScene extends Phaser.Scene {
         });
 
         window.addEventListener('hud-start-clicked', () => {
+            if (homeOpen()) return;
             const state = getGameState();
             if (state.status === 'ready' && isSensorUsable(state.sensor)) museum.startRun();
         });
@@ -140,6 +168,7 @@ class IntegrationScene extends Phaser.Scene {
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
+            if (homeOpen()) return;
             const { status } = getGameState();
             if (status === 'ready') window.dispatchEvent(new Event('hud-start-clicked'));
             else if (status === 'paused') window.dispatchEvent(new Event('hud-resume-clicked'));
@@ -165,6 +194,7 @@ const config = {
 };
 
 initHUD();
+initHome();
 
 const game = new Phaser.Game(config);
 game.events.once('ready', () => {
