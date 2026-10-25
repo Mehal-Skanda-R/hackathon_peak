@@ -35,7 +35,11 @@ class IntegrationScene extends Phaser.Scene {
             initSystems();
         });
 
+        // Show the whole museum for a second whenever a round starts.
+        let lastStatus = museum.status;
         museum.events.on('engine:state', (engineState) => {
+            if (lastStatus === 'ready' && engineState.status === 'playing') visibilitySystem?.revealAll(1000, 500);
+            lastStatus = engineState.status;
             updateGameState(engineState);
         });
 

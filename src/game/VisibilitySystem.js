@@ -20,7 +20,15 @@ export default class VisibilitySystem {
     this.overlay.setMask(mask);
 
     this.activePulses = [];
+    this.preview = null;
     this.scene.events.on('heartbeat:pulse', this.handlePulse, this);
+  }
+
+  // Briefly show the whole map (e.g. at round start), then fade back to dark.
+  // Visual only: guards and pulse exposure are unaffected.
+  revealAll(holdMs = 1000, fadeMs = 500) {
+    this.preview = { elapsed: 0, holdMs, fadeMs };
+    this.overlay.setAlpha(0);
   }
 
   handlePulse(pulse) {
@@ -28,6 +36,14 @@ export default class VisibilitySystem {
   }
 
   update(deltaMs) {
+    if (this.preview) {
+      const p = this.preview;
+      p.elapsed += deltaMs;
+      const t = Phaser.Math.Clamp((p.elapsed - p.holdMs) / p.fadeMs, 0, 1);
+      this.overlay.setAlpha(t);
+      if (t >= 1) this.preview = null;
+    }
+
     this.maskGraphics.clear();
     
     for (let i = this.activePulses.length - 1; i >= 0; i--) {
