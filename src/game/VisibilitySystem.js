@@ -25,6 +25,24 @@ function revealBrush(scene) {
   return BRUSH_KEY;
 }
 
+// Brightness of the brush at a fraction (0 centre .. 1 edge) of its radius;
+// mirrors the gradient stops above so revealAt() matches what is drawn.
+function brushFalloff(f) {
+  const stops = [[0, 1], [0.55, 1], [0.8, 0.55], [0.93, 0.15], [1, 0]];
+  if (f >= 1) return 0;
+  for (let i = 1; i < stops.length; i++) {
+    const [f1, v1] = stops[i];
+    const [f0, v0] = stops[i - 1];
+    if (f <= f1) return v0 + (v1 - v0) * (f - f0) / (f1 - f0);
+  }
+  return 0;
+}
+
+// Constant dim vision around the thief: 120% of the 100 px base pulse radius,
+// showing the map very faintly. Guards are not shown by it (see revealAt).
+export const AMBIENT_RADIUS = 120;
+const AMBIENT_STRENGTH = 0.28;
+
 export default class VisibilitySystem {
   constructor(scene, mapGeometry) {
     this.scene = scene;
@@ -65,6 +83,13 @@ export default class VisibilitySystem {
     this.overlay.clear();
     this.overlay.fill(0x000000, 0.98); // almost pitch black
 
+    // Non-pulsing dim vision that follows the thief.
+    const me = this.scene.getPlayerState?.();
+    if (me) {
+      this.brush.setPosition(me.x, me.y).setScale(AMBIENT_RADIUS / BRUSH_RADIUS).setAlpha(AMBIENT_STRENGTH);
+      this.overlay.erase(this.brush);
+    }
+
     for (let i = this.activePulses.length - 1; i >= 0; i--) {
       const p = this.activePulses[i];
       p.progress += deltaMs;
@@ -86,7 +111,20 @@ export default class VisibilitySystem {
         .setScale(currentRadius / BRUSH_RADIUS)
         .setAlpha(strength);
       this.overlay.erase(this.brush);
+      p.drawn = { x: at.x, y: at.y, radius: currentRadius, strength };
     }
+  }
+
+  // How strongly pulse light (or the round-start preview) reveals a point, 0..1.
+  // The dim ambient circle is deliberately excluded, so guards stay hidden in it.
+  revealAt(x, y) {
+    let best = this.preview ? 1 - this.overlay.alpha : 0;
+    for (const p of this.activePulses) {
+      const d = p.drawn;
+      if (!d || d.radius <= 0) continue;
+      best = Math.max(best, d.strength * brushFalloff(Math.hypot(x - d.x, y - d.y) / d.radius));
+    }
+    return best;
   }
 
   destroy() {

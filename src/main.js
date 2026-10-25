@@ -25,6 +25,8 @@ class IntegrationScene extends Phaser.Scene {
             pulseSystem = new PulseSystem(museum);
             visibilitySystem = new VisibilitySystem(museum, mapGeometry);
             guardSystem = new GuardSystem(museum, mapGeometry);
+            // Guards show only in pulse light, never in the dim ambient circle.
+            guardSystem.setVisibilityProbe((x, y) => visibilitySystem.revealAt(x, y));
             pulseEffects = new PulseEffects(museum);
             pulseEffects.graphics.setDepth(51);
         };

@@ -225,6 +225,7 @@ function drawingScene() {
     const live = name => function () { if (!this.scene) throw new TypeError(`Cannot read properties of null (reading '${name}')`); return this; };
     for (const m of ['setPosition', 'setSize', 'setTexture', 'setText', 'setColor', 'setFillStyle']) o[m] = live(m);
     for (const m of ['setDepth', 'setOrigin', 'setStrokeStyle']) o[m] = function () { return this; };
+    o.setAlpha = function (a) { this.alpha = a; return this; };
     objects.push(o); return o;
   };
   scene.add = { rectangle: make, image: make, text: make };
@@ -238,6 +239,18 @@ test('creates one sprite, one suspicion bar and one alert icon per guard', () =>
   const scene = drawingScene();
   new GuardSystem(scene, MAP_GEOMETRY);
   assert.equal(scene.objects.length, 6);
+});
+
+test('visibility probe sets guard sprite, bar and icon alpha', () => {
+  const scene = drawingScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  system.setVisibilityProbe(() => 0);
+  assert.ok(scene.objects.every(o => o.alpha === 0), 'hidden outside pulse light');
+  system.setVisibilityProbe((x) => (x < 400 ? 1 : 0.25));
+  const [gallery, east] = system.getStates();
+  assert.ok(gallery.x < 400 && east.x >= 400);
+  assert.deepEqual(scene.objects.slice(0, 3).map(o => o.alpha), [1, 1, 1]);
+  assert.deepEqual(scene.objects.slice(3, 6).map(o => o.alpha), [0.25, 0.25, 0.25]);
 });
 
 test('guard sprite frames are drawn once and cached per facing/stride', () => {

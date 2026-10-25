@@ -159,6 +159,13 @@ export default class GuardSystem {
     this.syncViews();
   }
 
+  // Optional (x, y) => 0..1 light level; guards are drawn only as visible as
+  // pulse light makes them, so dim ambient vision never shows them.
+  setVisibilityProbe(probe) {
+    this.visibilityProbe = probe;
+    this.syncViews();
+  }
+
   viewParts(view) {
     return [view.body, view.meter, view.icon];
   }
@@ -181,6 +188,11 @@ export default class GuardSystem {
       if (texture !== view.texture) { view.body.setTexture(texture); view.texture = texture; }
       view.meter.setPosition(guard.x - 10, guard.y - 24).setSize(20 * guard.suspicion, 3);
       view.icon.setPosition(guard.x, guard.y - 34);
+      const alpha = this.visibilityProbe ? this.visibilityProbe(guard.x, guard.y) : 1;
+      if (alpha !== view.alpha) {
+        view.alpha = alpha;
+        for (const part of this.viewParts(view)) part.setAlpha(alpha);
+      }
       // Text restyles redraw and re-upload the text texture, so only on state change.
       if (guard.state !== view.state) {
         view.state = guard.state;
