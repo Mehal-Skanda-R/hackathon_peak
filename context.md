@@ -912,3 +912,6 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: coin rule fixed at **50% of the level's own coins (rounded up)** via
   `requiredCoins()` in config.js (tested for every level); banked coins never count. Coin counter
   is now clean top-right text over the game (`7d06e12`).
+- 25 Oct 2026 — Shyam: full-screen Mission Failed / Heist Complete screens from the team artwork
+  (baked stats/buttons erased; live stats + Replay level / Home / Restart from level 1 / Return
+  to home). Run deaths tracked as `runDeaths` in GameState (`dd19633`).
