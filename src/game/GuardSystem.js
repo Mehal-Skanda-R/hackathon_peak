@@ -176,12 +176,18 @@ export default class GuardSystem {
       }
       const stride = moved > 0.01 ? Math.floor(view.walked / STRIDE_PX) % 2 : 0;
       view.lastX = guard.x; view.lastY = guard.y;
-      view.body.setPosition(guard.x, guard.y).setTexture(guardSpriteTexture(this.scene, view.facing, stride));
-      view.meter.setPosition(guard.x - 10, guard.y - 24).setSize(20 * guard.suspicion, 3)
-        .setFillStyle(STATE_COLORS[guard.state]);
-      const icon = STATE_ICONS[guard.state];
-      view.icon.setPosition(guard.x, guard.y - 34).setText(icon)
-        .setColor(guard.state === 'chase' ? '#ff4d5e' : '#ffa133');
+      view.body.setPosition(guard.x, guard.y);
+      const texture = guardSpriteTexture(this.scene, view.facing, stride);
+      if (texture !== view.texture) { view.body.setTexture(texture); view.texture = texture; }
+      view.meter.setPosition(guard.x - 10, guard.y - 24).setSize(20 * guard.suspicion, 3);
+      view.icon.setPosition(guard.x, guard.y - 34);
+      // Text restyles redraw and re-upload the text texture, so only on state change.
+      if (guard.state !== view.state) {
+        view.state = guard.state;
+        view.meter.setFillStyle(STATE_COLORS[guard.state]);
+        view.icon.setText(STATE_ICONS[guard.state])
+          .setColor(guard.state === 'chase' ? '#ff4d5e' : '#ffa133');
+      }
     }
   }
 }

@@ -49,8 +49,11 @@ export function initHUD() {
     <p class="eyebrow" id="round-eyebrow"></p>
     <div id="round-title"></div>
     <div id="round-subtitle"></div>
+    <button class="primary" id="banner-start-btn">Enter the museum <span>↗</span></button>
+    <button class="primary resume" id="banner-resume-btn">Resume the heist <span>▸</span></button>
     <button class="primary" id="restart-btn">Play again <span>↺</span></button>
-    <div class="hint">OR PRESS R</div>
+    <button class="secondary" id="banner-ble-btn">Connect heart-rate sensor <span>❤</span></button>
+    <div class="hint" id="round-hint"></div>
   `;
   game.appendChild(banner);
 
@@ -60,6 +63,9 @@ export function initHUD() {
   $('start-btn').addEventListener('click', () => fire('hud-start-clicked'));
   $('resume-btn').addEventListener('click', () => fire('hud-resume-clicked'));
   $('restart-btn').addEventListener('click', () => fire('hud-restart-clicked'));
+  $('banner-start-btn').addEventListener('click', () => fire('hud-start-clicked'));
+  $('banner-resume-btn').addEventListener('click', () => fire('hud-resume-clicked'));
+  $('banner-ble-btn').addEventListener('click', () => fire('hud-ble-clicked'));
   $('ble-btn').addEventListener('click', () => fire('hud-ble-clicked'));
   $('test-btn').addEventListener('click', () => fire('hud-test-mode-clicked'));
   // Buttons, not arrow keys: arrows move the player.
@@ -143,17 +149,53 @@ export function initHUD() {
     $('test-controls').style.display = live ? 'none' : 'flex';
     $('test-btn').style.display = live ? 'flex' : 'none';
 
-    // End-of-round screen
-    const ended = state.status === 'caught' || state.status === 'victory';
-    banner.style.display = ended ? 'flex' : 'none';
-    if (ended) {
-      const caught = state.status === 'caught';
-      $('round-eyebrow').textContent = caught ? 'OPERATION FAILED' : 'OPERATION COMPLETE';
-      $('round-title').textContent = caught ? 'Caught.' : 'You escaped.';
-      $('round-title').className = caught ? 'caught' : 'victory';
-      $('round-subtitle').textContent = caught
-        ? 'A guard got you. The crystal stays in the museum.'
-        : 'The golden heart of the museum is yours.';
+    // On-canvas screen for every non-playing state (also visible in full screen),
+    // so the dark museum is never a silent black box.
+    const sensorHint = usable ? null
+      : sensor.stale ? (live && !sensor.connected ? 'Connect the heart-rate sensor.'
+        : 'Waiting for a heart-rate signal…')
+      : `Calibrating your resting heart rate (~${live ? 20 : 3}s)…`;
+    const screen = {
+      ready: {
+        eyebrow: 'OPERATION 001 · THE MUSEUM JOB',
+        title: usable ? 'Ready when you are.' : 'Waiting for heart-rate input.',
+        subtitle: sensorHint ?? 'Find the crystal, take it, and get back to the exit.',
+        button: 'banner-start-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
+      },
+      paused: {
+        eyebrow: 'HEIST PAUSED',
+        title: 'Paused.',
+        subtitle: (state.pauseReason ? `${state.pauseReason}. ` : '')
+          + (sensorHint ?? 'Input is back. Resume when you are ready.'),
+        button: 'banner-resume-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
+      },
+      caught: {
+        eyebrow: 'OPERATION FAILED', title: 'Caught.',
+        subtitle: 'A guard got you. The crystal stays in the museum.',
+        button: 'restart-btn', hint: 'OR PRESS R', tone: 'caught',
+      },
+      victory: {
+        eyebrow: 'OPERATION COMPLETE', title: 'You escaped.',
+        subtitle: 'The golden heart of the museum is yours.',
+        button: 'restart-btn', hint: 'OR PRESS R', tone: 'victory',
+      },
+    }[state.status];
+    banner.style.display = screen ? 'flex' : 'none';
+    if (screen) {
+      $('round-eyebrow').textContent = screen.eyebrow;
+      $('round-title').textContent = screen.title;
+      $('round-title').className = screen.tone;
+      $('round-subtitle').textContent = screen.subtitle;
+      $('round-hint').textContent = screen.hint;
+      for (const id of ['banner-start-btn', 'banner-resume-btn', 'restart-btn']) {
+        $(id).style.display = id === screen.button ? 'flex' : 'none';
+      }
+      $('banner-start-btn').disabled = !usable;
+      $('banner-resume-btn').disabled = !usable;
+      const waiting = state.status === 'ready' || state.status === 'paused';
+      banner.classList.toggle('waiting', waiting);
+      // Reachable in full screen too, where the side panel is hidden.
+      $('banner-ble-btn').style.display = waiting && live && !sensor.connected ? 'flex' : 'none';
     }
   });
 }

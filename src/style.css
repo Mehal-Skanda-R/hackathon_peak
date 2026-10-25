@@ -88,7 +88,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid #8bd9d0; outline-offs
 #round-title.caught { color: #ff6b77; text-shadow: 0 0 30px #ff4d5e55; }
 #round-title.victory { color: #eac477; text-shadow: 0 0 30px #efb74b66; }
 #round-subtitle { color: #8a9c9c; font-size: 13px; max-width: 360px; line-height: 1.6; }
-#restart-btn { width: auto; min-width: 210px; margin-top: 6px; }
+#restart-btn, #banner-start-btn, #banner-resume-btn, #banner-ble-btn { width: auto; min-width: 210px; margin-top: 6px; }
+#round-banner.waiting { background: radial-gradient(ellipse at center, #0b1316c8, #050909e0); }
 #round-banner .hint { color: #5f7273; font-size: 9px; letter-spacing: 1.6px; }
 
 /* Full screen: the whole museum frame (canvas + round screen) fills the display */
