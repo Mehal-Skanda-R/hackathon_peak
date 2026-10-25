@@ -30,7 +30,7 @@ export class SignalProcessor {
     }
 
     if (!this.isCalibrated) {
-      if (!this.calibrationStartTime) {
+      if (this.calibrationStartTime === null) {
         this.calibrationStartTime = timestampMs;
       }
 
