@@ -853,3 +853,7 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: home screen replaced by the team's castle artwork (public/assets/home/
   home-screen.webp) with hotspot buttons over its labels (`b06ff6c`). Level names now match it:
   1 'The Museum Job', 7 'The Pinnacle Heist'. Printed progress/coins/locks in the image are static.
+- 25 Oct 2026 — Shyam: coins are no longer optional. Each exit door needs `coinsRequired` coins
+  (half the level's coins, rounded up; L1 7/13, L2 6/11, L3 6/11, L4 5/9, L5 8/16, L6 5/10,
+  L7 5/9 + crystal). Engine: `doorOpen`, `coinsRequired` in state, `engine:door-locked`. Coin chip
+  over the canvas shows progress (`337ff8d`).
