@@ -119,7 +119,10 @@ tests/
   Screen/CSS coordinates must never enter physics, radius or detection calculations.
 - Soham publishes map width/height/tile size, spawn, artefact, exit, cover and
   geometry helpers in `config.js` before Shyam/Mehal bind routes or visibility to it.
-  **Actual dimensions and movement speed are not chosen yet.** Do not assume the old map.
+  **Soham's selected map (adaptation in progress):** 800 × 544 px, 32 px tiles,
+  25 × 17 grid, 18 × 18 player body, 160 px/second normalized movement.
+  Spawn (80,464), artefact center (720,112), exit rect (32,416,64,96).
+  Geometry/code and fresh tests will be linked in Soham's handoff before integration.
 - Automatic artefact pickup on overlap; exit only wins while carrying artefact.
 - Hiding is true when the full player body lies in a marked cover zone. Moving
   inside that zone is allowed. Hiding reduces guard exposure; it never stops pulses.
@@ -336,7 +339,7 @@ The prior prototype's tests are not evidence for this build.
 
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
-| Soham | Assigned; new engine not implemented | Pull starter; publish map and engine interfaces | None for fresh build |
+| Soham | In progress: explicitly authorized adaptation of prior engine to v1 lifecycle/APIs | Implement owned modules and isolated engine tests while shared starter is pending | Fresh verification/PR pending; no shared bootstrap edits |
 | Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
 | Shyam | Assigned; guards not implemented | Agree geometry dependency; implement patrol + pulse response | None for fresh build |
 | Mehal | Assigned; starter/integration not implemented | Initialize Vite/Phaser 3 once and publish starter commit | None for fresh build |
@@ -345,7 +348,7 @@ Open problems:
 - Exact sensor model/availability and actual desktop connection; do not assume Apple
   Watch/Galaxy Watch exposes the standard BLE service without an extra bridge.
 - Real seated BPM variation and appropriate sensitivity; initial constants are untested.
-- Actual map dimensions, movement speed, guard routes/speeds and collision bindings.
+- Map dimensions/speed selected by Soham above; guard routes/speeds and integration collision bindings remain pending.
 - Exact GameState writer API and initial scene wiring; Soham + Mehal own this decision.
 - Team repository write access and hosting access must be verified per teammate/AI.
 - No role acknowledgement or implementation is claimed on behalf of an absent teammate.
@@ -435,5 +438,8 @@ context commit verified on main (or publication pending/failed).
   Test input belongs to the sensor owner; Mehal owns its UI and the single pulse scheduler.
 - 25 Oct 2026 — Preliminary description preserved: automatic pulses, baseline-relative
   radius, live-input dependency, clearly disclosed test mode and small complete heist.
-- No new-build implementation or hardware checks have been verified at this baseline.
+- 25 Oct 2026 — Soham explicitly authorized adapting the earlier engine to this fresh
+  assignment. Reuse is permitted for his engine modules/tests, with new lifecycle
+  implementation and fresh verification. Shared starter remains Mehal's responsibility.
+- No hardware checks have been verified; engine adaptation is in progress.
 
