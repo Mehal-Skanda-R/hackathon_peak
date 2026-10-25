@@ -1,4 +1,4 @@
-import { SignalProcessor } from './signalProcessor.js';
+import { SignalProcessor, LIVE_CALIBRATION_MS, TEST_CALIBRATION_MS } from './signalProcessor.js';
 import { TestSensor } from './testSensor.js';
 
 let currentState = {
@@ -180,6 +180,8 @@ export function setSensorMode(mode) {
 
   currentState.mode = mode;
   currentState.error = null;
+  // TEST input is simulated, so it needs no 45 s resting-baseline window.
+  signalProcessor.setCalibrationDuration(mode === 'test' ? TEST_CALIBRATION_MS : LIVE_CALIBRATION_MS);
 
   if (mode === 'test') {
     currentState.connected = false;

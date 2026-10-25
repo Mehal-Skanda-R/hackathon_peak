@@ -53,13 +53,13 @@ test('SignalProcessor: EMA seed/alpha, range rejection, 45 s calibration, 5 s st
   assert.equal(sp.isStale(50000), true);
 });
 
-test('TEST mode starts on load without any call, then calibrates after 45 s', () => {
+test('TEST mode starts on load without any call and calibrates in ~3 s, not 45 s', () => {
   assert.equal(state().mode, 'test');
-  advance(3000);
+  advance(2000);
   assert.ok(state().bpm !== null, 'readings flowing');
   assert.equal(state().stale, false);
   assert.equal(state().calibrated, false);
-  advance(46000);
+  advance(3000);
   assert.equal(state().calibrated, true);
   assert.ok(state().smoothedBpm !== null);
 });
@@ -85,7 +85,9 @@ test('LIVE: fake BLE device connects, calibrates, rejects malformed packets', as
   await HR.connectHeartRate();
   assert.equal(state().connected, true);
   const notify = handlers.characteristicvaluechanged;
-  for (let i = 0; i < 47; i++) { notify(packet([0x00, 70])); advance(1000); }
+  for (let i = 0; i < 44; i++) { notify(packet([0x00, 70])); advance(1000); }
+  assert.equal(state().calibrated, false, 'LIVE keeps the 45 s baseline window');
+  for (let i = 0; i < 3; i++) { notify(packet([0x00, 70])); advance(1000); }
   assert.equal(state().calibrated, true);
   assert.equal(state().stale, false);
   notify(packet([0x01, 0x48]));   // malformed: ignored
@@ -116,4 +118,13 @@ test('LIVE device disconnect: not connected, not calibrated, stays LIVE', () => 
   assert.equal(state().stale, true);
   assert.equal(state().mode, 'live');
   assert.equal(state().error, 'Sensor disconnected');
+});
+
+test('back to TEST after LIVE: readings resume and recalibrate in ~3 s', () => {
+  HR.setSensorMode('test');
+  assert.equal(state().calibrated, false);
+  advance(5000);
+  assert.equal(state().mode, 'test');
+  assert.equal(state().calibrated, true);
+  assert.equal(state().stale, false);
 });

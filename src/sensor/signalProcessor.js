@@ -1,10 +1,17 @@
 const EMA_ALPHA = 0.2;
-const CALIBRATION_DURATION_MS = 45000; // 45 seconds
+export const LIVE_CALIBRATION_MS = 45000; // real wearer baseline
+export const TEST_CALIBRATION_MS = 3000;  // simulated input: a few readings suffice
 const STALE_THRESHOLD_MS = 5000;        // 5 seconds
 
 export class SignalProcessor {
   constructor() {
+    this.calibrationDurationMs = LIVE_CALIBRATION_MS;
     this.reset();
+  }
+
+  // Kept across reset(): the duration belongs to the source (LIVE or TEST).
+  setCalibrationDuration(ms) {
+    this.calibrationDurationMs = ms;
   }
 
   reset() {
@@ -36,7 +43,7 @@ export class SignalProcessor {
 
       this.calibrationSamples.push(this.smoothedBpm);
 
-      if (timestampMs - this.calibrationStartTime >= CALIBRATION_DURATION_MS) {
+      if (timestampMs - this.calibrationStartTime >= this.calibrationDurationMs) {
         const sum = this.calibrationSamples.reduce((acc, val) => acc + val, 0);
         this.baselineBpm = sum / this.calibrationSamples.length;
         this.isCalibrated = true;
