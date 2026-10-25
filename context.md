@@ -360,6 +360,28 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Soham's scoped UI fixes — 25 Oct 2026 (PR #8, awaiting merge)
+- Soham explicitly authorized fixing the two audit findings and pushing only those
+  changes. Shared integration/UI edits are reviewable in [PR #8](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/8),
+  branch `fix/menu-progress-sync`, commit `df2989f`; tested remote tree verified
+  identical to local. Based on main `30174ea`, preserving the new coin gate/counter.
+- Menu is disabled during door transitions; main also rejects menu-open events in
+  that state. Home's printed example Continue floor/progress/coins/locks now have
+  live UI overlays from real saved progress. Continue/Enter match the displayed
+  resumable floor. Castle artwork unchanged.
+- Changed only `src/main.js`, `src/ui/hud.js`, `src/ui/home.js`,
+  `src/style.css` and `tests/ui/menu-progress.cjs`. No module API, map, guard,
+  sensor, audio, asset or dependency change.
+- Checks: npm test **46 passed**; production build passed (existing chunk warning).
+  Focused Chromium regression passed fresh/partial/completed progress, persistence,
+  locked-floor rejection, coin gate, transition-menu blocking, ordinary pause/resume,
+  earlier-floor Continue/Enter agreement; one canvas, no page errors.
+  Run root Vite, install existing tests/engine deps, then
+  `node tests/ui/menu-progress.cjs http://127.0.0.1:5173`.
+- Mehal/integration: review/merge PR #8. Fixes are pushed, not yet claimed deployed.
+
+
+
 ### Soham's latest-game audit — 25 Oct 2026
 - Audited main snapshot `f35f81e` in an isolated source export; no game source edits.
   npm ci, all **46** Node tests and production build passed (existing chunk warning).
