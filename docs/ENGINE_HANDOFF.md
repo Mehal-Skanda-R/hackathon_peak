@@ -10,7 +10,8 @@ package files. The fixture is not a simulated-sensor implementation or live demo
 | File | Exports |
 | --- | --- |
 | `src/game/config.js` | Named map/constants and pure geometry helpers listed below |
-| `src/game/Player.js` | Default `Player` (Rectangle with an Arcade dynamic body) |
+| `src/game/Player.js` | Default `Player` (40px thief Sprite with the original centered 18px Arcade body) |
+| `src/game/MuseumArt.js` | Presentation helpers `createMuseumArt(scene)` and `thiefTexture(scene,facing,stride)` |
 | `src/game/MuseumScene.js` | Default `MuseumScene`; named `ENGINE_EVENTS` |
 
 The selected map is **800 × 544 pixels**, 25 × 17 tiles of 32 pixels. Origin is
@@ -24,6 +25,27 @@ exit rectangles use top-left x/y/width/height. CSS scaling does not change the w
 - Cover: (64,160,64,64), (416,256,64,64), (672,256,64,64). Hiding requires the full
   body inside a zone; movement within it is allowed. No pulse behavior lives here.
 - Geometry, arrays and snapshots are frozen. All visuals are generated with Phaser.
+
+## Art direction and visibility integration
+
+Soham requested the museum match the PPT concept's atmosphere. `MuseumArt.js`
+draws deterministic stone tile/brick textures, carved trim, burgundy rugs/banners,
+statue plinths, plants, amber sconce pools, a golden faceted crystal and cyan-cloaked
+thief frames. No image downloads or runtime external assets/fonts are required.
+The fixture page has a matching midnight/gold frame, mission panel and responsive layout.
+Its controls remain test-only; Mehal owns the production HUD and stylesheet.
+
+Walls and objectives have separate invisible physics shapes. Geometry, player body,
+routes, movement speed and state/event contracts are unchanged by the art pass.
+The Sprite initializes its inset body before ready-state physics pauses; body centers
+remain authoritative. Texture keys are cached/reused on restart rather than recreated.
+
+Render depths: `scene.worldArt` (single background image) = 0, `scene.exitVisual` = 2,
+`scene.artefactVisual` = 4, player = 10. Collecting hides the crystal visual and tints
+the exit; restart restores them. The display layers fit below Mehal's current
+VisibilitySystem darkness overlay (50) and PulseEffects rings (51). Baked lamp
+gradients are scenery, not a second visibility/pulse system. His overlay can cover
+all world art together; no replacement of that effect is included here.
 
 Playtest revision: Soham found the original artefact route too easy. The bottom
 gallery shortcut is closed, a central partition adds a turn, and an upper-right
@@ -118,8 +140,8 @@ the engine also removes its post-update listener and owned movement/R key object
 
 ## Test fixture and commands
 
-Until Mehal's starter is available, test dependencies are scoped to `tests/engine`.
-No production root package or lockfile is introduced. With Node 24.12.0 (tested):
+Test dependencies remain scoped to `tests/engine`, so the fixture is reproducible
+independently of the team's integrated root tooling. With Node 24.12.0 (tested):
 
 ```sh
 cd tests/engine
@@ -154,10 +176,19 @@ Fresh verification on 25 October 2026, Node 24.12.0 / Chromium:
 No known engine failure remains in these tested cases. This is not a claim that
 the not-yet-integrated production application or real sensor flow has passed.
 
+Art-pass verification: 4 geometry + 5 Chromium checks passed; fixture production
+build passed (~338 kB gzip, normal Phaser chunk warning). Desktop (1280 px) and
+narrow (390 px) screenshots inspected; narrow document width equals viewport width.
+Tested against Mehal's integrated main, root `npm ci`/`npm run build` also passed.
+Browser smoke on that build: one canvas, TEST mode, Start → PLAYING, movement and
+visible pulse/darkness over the new artwork, zero page errors. No real hardware
+behavior was exercised. The root lockfile's dependency audit reports existing
+vulnerabilities; dependency updates remain with the shared-package owner.
+
 ## Integration still required
 
-- Mehal: starter, GameState adapter, input-readiness Start/Resume gate, status-gated
-  systems and reset/shutdown wiring. Keep exactly one game instance.
+- Mehal: verify the art pass in the integrated UI; complete input-readiness
+  Start/Resume gating, status-gated systems and reset/shutdown wiring. Keep one game.
 - Shyam: routes/spawns against this geometry; add guard-to-wall colliders; publish
   `guards:caught` and have integration call `catchPlayer()`.
 - Mehal: visibility mask/pulse effects over these world objects; use the context's

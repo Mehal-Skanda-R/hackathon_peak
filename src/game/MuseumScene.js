@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import Player from './Player.js';
-import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE, WALLS,
-  HIDING_ZONES, ARTEFACT, EXIT, MAP_GEOMETRY, canOccupy, hasLineOfSight } from './config.js';
+import { createMuseumArt } from './MuseumArt.js';
+import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, WALLS,
+  ARTEFACT, EXIT, MAP_GEOMETRY, canOccupy, hasLineOfSight } from './config.js';
 
 export const ENGINE_EVENTS = Object.freeze({
   READY: 'engine:ready', STATE: 'engine:state', PICKUP: 'engine:artefact-collected',
@@ -21,29 +22,23 @@ export default class MuseumScene extends Phaser.Scene {
     this.lastSnapshot = null;
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-    this.cameras.main.setBackgroundColor(0x101c2b);
-
-    const floor = this.add.graphics();
-    floor.lineStyle(1, 0x1b2b3b);
-    for (let x = 0; x <= WORLD_WIDTH; x += TILE_SIZE) floor.lineBetween(x, 0, x, WORLD_HEIGHT);
-    for (let y = 0; y <= WORLD_HEIGHT; y += TILE_SIZE) floor.lineBetween(0, y, WORLD_WIDTH, y);
-
-    for (const zone of HIDING_ZONES) {
-      this.add.rectangle(zone.x, zone.y, zone.width, zone.height, 0x164550)
-        .setOrigin(0).setStrokeStyle(2, 0x287681);
-    }
+    this.cameras.main.setBackgroundColor(0x080f13);
+    const art = createMuseumArt(this);
+    this.worldArt = art.background;
+    this.artefactVisual = art.artefact;
+    this.exitVisual = art.exit;
     this.exit = this.add.rectangle(EXIT.x + EXIT.width / 2, EXIT.y + EXIT.height / 2,
-      EXIT.width, EXIT.height, 0x284637).setStrokeStyle(2, 0x5d9875);
+      EXIT.width, EXIT.height).setVisible(false);
     this.physics.add.existing(this.exit, true);
 
     this.walls = this.physics.add.staticGroup();
     for (const wall of WALLS) {
       const object = this.add.rectangle(wall.x + wall.width / 2, wall.y + wall.height / 2,
-        wall.width, wall.height, 0x526279).setStrokeStyle(1, 0x8090a2);
+        wall.width, wall.height).setVisible(false);
       this.walls.add(object);
     }
-    this.artefact = this.add.rectangle(ARTEFACT.x, ARTEFACT.y, ARTEFACT.size, ARTEFACT.size, 0xffce70)
-      .setStrokeStyle(2, 0xffedb8).setDepth(2);
+    this.artefact = this.add.rectangle(ARTEFACT.x, ARTEFACT.y, ARTEFACT.size, ARTEFACT.size)
+      .setVisible(false);
     this.physics.add.existing(this.artefact, true);
     this.player = new Player(this);
     this.physics.add.collider(this.player, this.walls);
@@ -82,8 +77,8 @@ export default class MuseumScene extends Phaser.Scene {
     if (this.status !== 'playing' || this.restartPending || this.hasArtefact) return false;
     this.hasArtefact = true;
     this.artefact.body.enable = false;
-    this.artefact.setVisible(false);
-    this.exit.setFillStyle(0x367e57);
+    this.artefactVisual.setVisible(false);
+    this.exitVisual.setTint(0x8bffd0);
     this.events.emit(ENGINE_EVENTS.PICKUP, this.getState());
     this.publishState(true);
     return true;

@@ -3,27 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Heartbeat Heist · engine fixture</title>
-  <style>
-    body { margin: 24px auto; padding: 0 16px; max-width: 800px; color: #e1edf5; background: #09111c; font: 14px system-ui; }
-    h1 { font-size: 24px; margin-bottom: 6px; }
-    #game { width: 100%; aspect-ratio: 25 / 17; }
-    canvas { display: block; }
-    button { margin: 4px 6px 12px 0; padding: 8px 12px; cursor: pointer; }
-    p { color: #b0c6d6; }
-  </style>
+  <title>Heartbeat Heist · The Midnight Collection</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1>Heartbeat Heist — engine fixture</h1>
-  <p>ISOLATED ENGINE TEST · No sensor, guards, pulses or production HUD</p>
-  <button id="start">Start engine test</button>
-  <button id="pause">Pause</button>
-  <button id="resume">Resume</button>
-  <button id="catch">Simulate caught</button>
-  <button id="restart">Restart</button>
-  <output id="status" aria-live="polite">Loading…</output>
-  <div id="game" aria-label="Museum engine test"></div>
-  <p>WASD / arrows · Gold: artefact · Green: exit · Teal: cover · R: return to ready</p>
+  <main class="shell">
+    <nav class="masthead" aria-label="Project">
+      <a class="wordmark" href="/" aria-label="Heartbeat Heist home">
+        <svg viewBox="0 0 42 30" aria-hidden="true"><path d="M1 16h9l5-12 7 23 6-15 4 4h9" /></svg>
+        HEARTBEAT <b>HEIST</b>
+      </a>
+      <span class="edition">THE MIDNIGHT COLLECTION <i></i> ART PREVIEW</span>
+    </nav>
+    <header class="page-heading">
+      <div><p class="eyebrow">OPERATION 001 / THE MUSEUM JOB</p><h1>A quiet night. A priceless prize.</h1></div>
+      <div class="status-wrap"><span class="status-dot"></span><output id="status" aria-live="polite">Loading…</output></div>
+    </header>
+    <div class="layout">
+      <section class="museum-frame" aria-label="Playable museum">
+        <div class="frame-top"><span><i></i> MUSEUM FLOOR · LEVEL 01</span><span>AFTER HOURS</span></div>
+        <div id="game" aria-label="Museum engine test"></div>
+        <div class="frame-bottom"><span><b>W A S D</b> / ARROWS TO MOVE</span><span><b>R</b> RESTART</span></div>
+      </section>
+      <aside class="briefing">
+        <div class="briefing-top"><span class="eyebrow">YOUR ASSIGNMENT</span><span class="number">01</span></div>
+        <div class="crystal" aria-hidden="true">◇</div>
+        <h2>The golden<br>heart of the museum.</h2>
+        <p id="objective">Find the crystal. Take it.<br>Get back to the exit.</p>
+        <button class="primary" id="start" aria-label="Start engine test">Enter the museum <span>↗</span></button>
+        <div class="rule"></div>
+        <h3>KNOW YOUR SURROUNDINGS</h3>
+        <ul class="legend">
+          <li><span class="legend-icon thief">◈</span><div><b>The thief</b><small>Your cyan-cloaked character</small></div></li>
+          <li><span class="legend-icon gold">◇</span><div><b>The prize</b><small>Touch the golden crystal</small></div></li>
+          <li><span class="legend-icon cover">❧</span><div><b>Cover</b><small>Hide inside the leafy green rugs</small></div></li>
+          <li><span class="legend-icon exit">↙</span><div><b>Your way out</b><small>Return with the crystal to escape</small></div></li>
+        </ul>
+        <p class="preview-note">Atmosphere preview. Guards and heartbeat-driven darkness join with the next game integration.</p>
+      </aside>
+    </div>
+    <footer class="controls">
+      <span class="eyebrow">PREVIEW CONTROLS</span>
+      <div><button id="pause">Pause</button><button id="resume">Resume</button><button id="catch" aria-label="Simulate caught">Test capture</button><button id="restart">Restart <kbd>R</kbd></button></div>
+      <span class="footer-note">Your heartbeat reveals the world. It also reveals you.</span>
+    </footer>
+  </main>
   <script type="module" src="./main.js"></script>
 </body>
 </html>
