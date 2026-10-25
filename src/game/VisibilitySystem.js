@@ -37,6 +37,14 @@ export default class VisibilitySystem {
       .setDepth(50);
     this.brush = this.scene.make.image({ x: 0, y: 0, key: revealBrush(scene), add: false });
 
+    // Faint outline of every wall/obstacle, always visible above the darkness,
+    // so the layout stays readable between pulses (details still need light).
+    this.outlines = this.scene.add.graphics().setDepth(50.5);
+    this.outlines.lineStyle(1, 0x9cc3c6, 0.28);
+    for (const wall of mapGeometry.walls) {
+      this.outlines.strokeRect(wall.x + 0.5, wall.y + 0.5, wall.width - 1, wall.height - 1);
+    }
+
     this.activePulses = [];
     this.preview = null;
     this.scene.events.on('heartbeat:pulse', this.handlePulse, this);
@@ -93,5 +101,6 @@ export default class VisibilitySystem {
     this.scene.events.off('heartbeat:pulse', this.handlePulse, this);
     this.overlay.destroy();
     this.brush.destroy();
+    this.outlines.destroy();
   }
 }
