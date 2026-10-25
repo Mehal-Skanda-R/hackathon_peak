@@ -149,7 +149,8 @@ tests/
   Full exports, coordinates and wiring: `docs/ENGINE_HANDOFF.md` on `feature/game-engine`.
 - Automatic artefact pickup on overlap; exit only wins while carrying artefact.
 - Hiding is true when the full player body lies in a marked cover zone. Moving
-  inside that zone is allowed. Hiding reduces guard exposure; it never stops pulses.
+  inside that zone is allowed. Hiding reduces pulse exposure (it never stops pulses)
+  and makes the player invisible to guards: no sight, no capture (decision below).
 - Caught/victory freezes active gameplay. R or a HUD button requests restart.
 
 ### Automatic pulses
@@ -181,7 +182,8 @@ tests/
 - Chase movement must respect geometry. Avoid adding advanced pathfinding before
   the patrol/investigate/caught loop works; publish any navigation dependency early.
 - Pulse eligibility uses pulse origin/hiding snapshot. Pursuit uses current player
-  state. Cover attenuates pulse suspicion, not invulnerability to physical capture.
+  state. Cover attenuates pulse suspicion AND prevents sight/capture while fully hidden
+  (Shyam decision, 25 Oct; supersedes the earlier attenuation-only rule).
 
 ## 5. Module contracts (v1; implementation status in section 7)
 
@@ -794,3 +796,7 @@ context commit verified on main (or publication pending/failed).
   (~20-25 fps) key release overshoots corners by up to ~10 px and the walker can wedge on a
   wall corner (e.g. return leg toward (464,208)). Seen on main with and without `0a806c6`;
   not a game defect. Soham may want a wider stop tolerance or per-frame key release.
+- 25 Oct 2026 — Shyam (guard owner), after playtesting: a player fully inside a cover zone
+  can no longer be seen or caught by guards; a chasing guard loses them and gives up after
+  3 s. Pulses while hidden still add 0.25x suspicion. Supersedes "cover is not invulnerability
+  to physical capture" in section 4. Commit `86d6942`; npm test 34 passed.
