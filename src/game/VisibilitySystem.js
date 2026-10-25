@@ -1,23 +1,41 @@
 import Phaser from 'phaser';
 
+const BRUSH_KEY = 'hh-reveal-gradient-v1';
+const BRUSH_RADIUS = 128;
+
+// Soft radial brush: fully clear in the middle, fading to nothing at the edge
+// (Among Us-style vision, no hard outline). Cached per texture manager.
+function revealBrush(scene) {
+  if (!scene.textures.exists(BRUSH_KEY)) {
+    const size = BRUSH_RADIUS * 2;
+    const canvas = scene.textures.createCanvas(BRUSH_KEY, size, size);
+    const ctx = canvas.context;
+    const gradient = ctx.createRadialGradient(BRUSH_RADIUS, BRUSH_RADIUS, 0, BRUSH_RADIUS, BRUSH_RADIUS, BRUSH_RADIUS);
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.55, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.8, 'rgba(255,255,255,0.55)');
+    gradient.addColorStop(0.93, 'rgba(255,255,255,0.15)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    canvas.refresh();
+    // The game uses pixelArt (nearest filtering); a scaled gradient needs smoothing.
+    canvas.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  }
+  return BRUSH_KEY;
+}
+
 export default class VisibilitySystem {
   constructor(scene, mapGeometry) {
     this.scene = scene;
     this.mapGeometry = mapGeometry;
-    
-    // Create the darkness overlay covering the whole map
-    this.overlay = this.scene.add.graphics();
-    this.overlay.fillStyle(0x000000, 0.98); // Almost pitch black
-    this.overlay.fillRect(0, 0, mapGeometry.width, mapGeometry.height);
-    
-    // We want the darkness to sit above the map but below the HUD/UI
-    this.overlay.setDepth(50); 
-    
-    // Create a geometry mask to punch transparent holes in the darkness
-    this.maskGraphics = this.scene.make.graphics();
-    const mask = new Phaser.Display.Masks.GeometryMask(this.scene, this.maskGraphics);
-    mask.setInvertAlpha(true);
-    this.overlay.setMask(mask);
+
+    // Darkness covering the whole map, redrawn each frame with soft holes
+    // erased where pulses are revealing. Sits above the map, below pulse FX/UI.
+    this.overlay = this.scene.add.renderTexture(0, 0, mapGeometry.width, mapGeometry.height)
+      .setOrigin(0, 0)
+      .setDepth(50);
+    this.brush = this.scene.make.image({ x: 0, y: 0, key: revealBrush(scene), add: false });
 
     this.activePulses = [];
     this.preview = null;
@@ -44,29 +62,34 @@ export default class VisibilitySystem {
       if (t >= 1) this.preview = null;
     }
 
-    this.maskGraphics.clear();
-    
+    this.overlay.clear();
+    this.overlay.fill(0x000000, 0.98); // almost pitch black
+
     for (let i = this.activePulses.length - 1; i >= 0; i--) {
-      let p = this.activePulses[i];
+      const p = this.activePulses[i];
       p.progress += deltaMs;
-      
+
       if (p.progress >= p.durationMs) {
         this.activePulses.splice(i, 1);
         continue;
       }
-      
-      let t = p.progress / p.durationMs;
-      // Use the same easing as PulseEffects so the reveal matches the white rings
-      let currentRadius = p.radius * Phaser.Math.Easing.Quadratic.Out(t);
-      
-      this.maskGraphics.fillStyle(0xffffff);
-      this.maskGraphics.fillCircle(p.x, p.y, currentRadius);
+
+      const t = p.progress / p.durationMs;
+      // Same easing as PulseEffects so the glow band sits on the reveal edge.
+      const currentRadius = p.radius * Phaser.Math.Easing.Quadratic.Out(t);
+      // Fade the reveal out over the last 40% instead of snapping shut.
+      const strength = t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4;
+      this.brush
+        .setPosition(p.x, p.y)
+        .setScale(currentRadius / BRUSH_RADIUS)
+        .setAlpha(strength);
+      this.overlay.erase(this.brush);
     }
   }
 
   destroy() {
     this.scene.events.off('heartbeat:pulse', this.handlePulse, this);
     this.overlay.destroy();
-    this.maskGraphics.destroy();
+    this.brush.destroy();
   }
 }

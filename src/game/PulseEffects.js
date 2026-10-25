@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+const BAND_HALF_WIDTH = 10; // px either side of the glow band's centre
+
 export default class PulseEffects {
   constructor(scene) {
     this.scene = scene;
@@ -25,10 +27,14 @@ export default class PulseEffects {
       
       let t = p.progress / p.durationMs;
       let currentRadius = p.radius * Phaser.Math.Easing.Quadratic.Out(t);
-      let alpha = 1 - t;
-      
-      this.graphics.lineStyle(2, 0xffffff, alpha);
-      this.graphics.strokeCircle(p.x, p.y, currentRadius);
+      // Soft glow band instead of a hard outline: thin rings whose alpha falls
+      // off toward both sides of the reveal edge, fading as the pulse ends.
+      const peak = 0.16 * (1 - t);
+      for (let k = -BAND_HALF_WIDTH; k <= BAND_HALF_WIDTH; k += 2) {
+        const falloff = 1 - Math.abs(k) / (BAND_HALF_WIDTH + 2);
+        this.graphics.lineStyle(2, 0xdff4ff, peak * falloff * falloff);
+        this.graphics.strokeCircle(p.x, p.y, Math.max(0, currentRadius * 0.86 + k));
+      }
     }
   }
 
