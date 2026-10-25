@@ -816,3 +816,23 @@ context commit verified on main (or publication pending/failed).
   searches near the last sighting; after 3 s hidden it leaves and its suspicion drains
   linearly to 0 over 5 s (pulses from cover are ignored while calming; a pulse from the open
   resumes normal rules). Icon: '!' chasing; '?' fades red -> orange -> yellow -> none.
+
+### Levels, coins and doors — 25 Oct 2026 (Shyam decision; implemented by Shyam's AI, `cc5f9d0`)
+- **Decision:** more levels are planned, so the crystal is the collectable of the **final level
+  only**. Levels are joined by an **exit door**; walking in plays a door animation and loads the
+  next level. **No way back** (each level's spawn sits at a barred "NO RETURN" entrance).
+  **Coins** are an optional score on paths and in corners, carried across levels.
+- `config.js`: `LEVELS` + `setLevel(index)`; `WALLS`, `HIDING_ZONES`, `SPAWN`, `ARTEFACT` (null
+  except final level), `EXIT` (the level's door), `ENTRANCE`, `COINS`, `MAP_GEOMETRY` are live
+  bindings of the active level. Level 1 "The Gallery" = previous map, door in the old crystal room.
+  Level 2 "The Vault" = new map, crystal in a vault with its own cover, door opens only with it.
+- Engine contract additions (MuseumScene): status `'transition'` during the door animation;
+  events `engine:coin`, `engine:door`, `engine:level-complete`; state adds `level`, `levelCount`,
+  `levelName`, `needsArtefact`, `coins`, `levelCoins`, `levelCoinTotal`. R/caught retries the
+  current level; `restartGame()` (Play again after final victory) returns to level 1.
+- Guards: `GUARD_ROUTES_BY_LEVEL` (vault: central hall + east wing loops).
+- Evidence: npm test 41 passed (geometry per level; guard routes per level). Chromium run of
+  coins -> door -> level 2 -> locked door -> crystal -> victory -> Play again; no errors.
+- **Soham:** `tests/engine/browser/engine.spec.js`, the engine fixture and
+  `tests/engine/combined-heist.cjs` still assume a level-1 crystal (`ARTEFACT`) and need updating
+  to the door objective. Map art for future levels goes in `LEVELS[i].decor`.
