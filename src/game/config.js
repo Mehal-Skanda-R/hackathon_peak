@@ -101,7 +101,7 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
 // score. `entrance` is the closed door the thief arrived through (decor only).
 export const LEVELS = Object.freeze([
   Object.freeze({
-    id: 'gallery', name: 'The Gallery',
+    id: 'gallery', name: 'The Museum Job',
     walls: Object.freeze([
       ...BORDER,
       // Enter the central gallery through the upper doorway; no bottom shortcut.
@@ -245,7 +245,7 @@ export const LEVELS = Object.freeze([
     ],
   }),
   asciiLevel({
-    id: 'final-heist', name: 'The Final Heist',
+    id: 'final-heist', name: 'The Pinnacle Heist',
     spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: [20, 15],
     rows: [
       "#########################",
