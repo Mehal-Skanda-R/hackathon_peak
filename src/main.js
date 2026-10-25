@@ -4,6 +4,7 @@ import { getGameState, updateGameState } from './game/GameState.js';
 import PulseSystem from './game/PulseSystem.js';
 import PulseEffects from './game/PulseEffects.js';
 import VisibilitySystem from './game/VisibilitySystem.js';
+import GuardSystem from './game/GuardSystem.js';
 import { initHUD } from './ui/hud.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate } from './sensor/heartRate.js';
 
@@ -15,6 +16,8 @@ class IntegrationScene extends Phaser.Scene {
         
         const pulseSystem = new PulseSystem(museum);
         const visibilitySystem = new VisibilitySystem(museum, mapGeometry);
+        const guardSystem = new GuardSystem(museum, mapGeometry);
+        
         const pulseEffects = new PulseEffects(museum);
         pulseEffects.graphics.setDepth(51);
 
@@ -22,11 +25,29 @@ class IntegrationScene extends Phaser.Scene {
             updateGameState(engineState);
         });
 
+        // Wire Shyam's guards:caught event to Soham's catchPlayer API
+        museum.events.on('guards:caught', () => {
+            museum.catchPlayer();
+        });
+
+        // Pass pulses to the guard system only while playing
+        museum.events.on('heartbeat:pulse', (pulse) => {
+            if (getGameState().status === 'playing') {
+                if (typeof guardSystem.handlePulse === 'function') guardSystem.handlePulse(pulse);
+            }
+        });
+
         museum.events.on('update', (time, delta) => {
             const state = getGameState();
             pulseSystem.update(delta, state.sensor, state);
             pulseEffects.update(delta);
             visibilitySystem.update(delta);
+            
+            // Update guards and push their state to the HUD
+            if (state.status === 'playing') {
+                guardSystem.update(delta, state.player);
+            }
+            updateGameState({ guards: guardSystem.getStates() });
         });
 
         window.addEventListener('hud-start-clicked', () => {
@@ -48,7 +69,6 @@ class IntegrationScene extends Phaser.Scene {
             if (getGameState().status === 'ready') museum.startRun();
         });
 
-        // Wire Shubranshu's real sensor data directly into your GameState
         subscribeToHeartRate((sensorState) => {
             updateGameState({ sensor: sensorState });
         });
