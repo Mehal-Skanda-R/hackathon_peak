@@ -82,6 +82,18 @@ class IntegrationScene extends Phaser.Scene {
             if (state.status === 'paused' && isSensorUsable(state.sensor)) museum.setPaused(false);
         });
 
+        // PLAY AGAIN: full round reset (scene restart recreates player, artefact,
+        // guards, pulses and darkness via engine:ready), then start immediately
+        // if the sensor is still usable; otherwise wait in ready for Start.
+        window.addEventListener('hud-restart-clicked', () => {
+            const { status } = getGameState();
+            if (status !== 'caught' && status !== 'victory') return;
+            museum.events.once('engine:ready', () => {
+                if (isSensorUsable(getGameState().sensor)) museum.startRun();
+            });
+            museum.restartRun();
+        });
+
         window.addEventListener('hud-test-mode-clicked', () => setSensorMode('test'));
         // Step from the chosen value, not the jittered reading; TestSensor clamps 40..200.
         let testBpm = 72;
