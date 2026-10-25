@@ -36,6 +36,10 @@ export default class GuardSystem {
     this.processedPulseIds = new Set();
     this.views = new Map();
     this.destroyed = false;
+    // Phaser destroys scene-owned display objects on restart; drop our handles
+    // first so no later sync touches a destroyed rectangle (audit: setSize on null).
+    this.onShutdown = () => this.views.clear();
+    scene.events.once?.('shutdown', this.onShutdown);
     this.createViews();
   }
 
@@ -71,9 +75,10 @@ export default class GuardSystem {
   destroy() {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.scene.events.off?.('shutdown', this.onShutdown);
     for (const view of this.views.values()) {
-      view.body?.destroy();
-      view.meter?.destroy();
+      if (view.body?.scene) view.body.destroy();
+      if (view.meter?.scene) view.meter.destroy();
     }
     this.views.clear();
     this.processedPulseIds.clear();
@@ -101,7 +106,7 @@ export default class GuardSystem {
   syncViews() {
     for (const guard of this.guards) {
       const view = this.views.get(guard.id);
-      if (!view) continue;
+      if (!view?.body.scene || !view.meter.scene) continue; // already destroyed by Phaser
       const size = this.tuning.bodySize;
       view.body.setPosition(guard.x, guard.y).setFillStyle(STATE_COLORS[guard.state]);
       view.meter.setPosition(guard.x - size / 2, guard.y - size / 2 - 6)

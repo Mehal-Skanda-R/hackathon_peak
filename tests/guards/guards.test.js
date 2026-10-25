@@ -168,3 +168,73 @@ test('state snapshots are frozen and match the contract shape', () => {
   assert.ok(Object.isFrozen(s));
   assert.deepEqual(Object.keys(s).sort(), ['id', 'state', 'suspicion', 'x', 'y']);
 });
+
+// Minimal Phaser stand-in: display objects lose `scene` when destroyed, and
+// 'shutdown' destroys everything the scene owns, as a Phaser restart does.
+function drawingScene() {
+  const scene = fakeScene();
+  const handlers = {};
+  const objects = [];
+  scene.events.once = (name, fn) => { (handlers[name] ??= []).push(fn); };
+  scene.events.off = (name, fn) => { handlers[name] = (handlers[name] ?? []).filter(f => f !== fn); };
+  scene.shutdown = () => {
+    const fns = handlers.shutdown ?? []; handlers.shutdown = [];
+    fns.forEach(f => f());
+    objects.forEach(o => o.destroy());
+  };
+  scene.listenerCount = name => (handlers[name] ?? []).length;
+  scene.add = { rectangle() {
+    const o = { scene, destroyCalls: 0,
+      destroy() { this.destroyCalls++; this.scene = null; },
+      setStrokeStyle() { return this; }, setDepth() { return this; }, setOrigin() { return this; },
+      setPosition() { if (!this.scene) throw new TypeError('setPosition on destroyed'); return this; },
+      setFillStyle() { return this; },
+      setSize() { if (!this.scene) throw new TypeError("Cannot read properties of null (reading 'setSize')"); return this; } };
+    objects.push(o); return o;
+  } };
+  scene.objects = objects;
+  return scene;
+}
+
+test('creates one body + one suspicion bar per guard', () => {
+  const scene = drawingScene();
+  new GuardSystem(scene, MAP_GEOMETRY);
+  assert.equal(scene.objects.length, 4);
+});
+
+test('after a scene shutdown, old system never touches destroyed objects', () => {
+  const scene = drawingScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  scene.shutdown();
+  assert.doesNotThrow(() => {
+    system.handlePulse(pulse(system.getStates()[0]));
+    run(system, 500, far);
+    system.reset();
+    system.destroy();
+  });
+  assert.ok(scene.objects.every(o => o.destroyCalls === 1), 'each object destroyed exactly once');
+});
+
+test('restart cycle (shutdown -> destroy old -> new system) gives a clean second run', () => {
+  const scene = drawingScene();
+  const first = new GuardSystem(scene, MAP_GEOMETRY);
+  const initial = first.getStates();
+  for (let i = 0; i < 3; i++) first.handlePulse(pulse(first.getStates()[0]));
+  run(first, 2000, far);
+  scene.shutdown();
+  first.destroy();
+  assert.equal(scene.listenerCount('shutdown'), 0, 'no leaked shutdown listener');
+  const second = new GuardSystem(scene, MAP_GEOMETRY);
+  assert.deepEqual(second.getStates(), initial);
+  assert.equal(scene.objects.filter(o => o.scene).length, 4, 'only the new run\'s 4 objects are live');
+  run(second, 1000, far);
+  assert.ok(second.getStates().every(g => g.state === 'patrol' && g.suspicion === 0));
+});
+
+test('destroy without shutdown removes its own objects and listener', () => {
+  const scene = drawingScene();
+  const system = new GuardSystem(scene, MAP_GEOMETRY);
+  system.destroy(); system.destroy();
+  assert.ok(scene.objects.every(o => o.destroyCalls === 1));
+  assert.equal(scene.listenerCount('shutdown'), 0);
+});
