@@ -334,6 +334,34 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Restart and runner fix verification — 25 Oct 2026, 11:16 IST (Soham)
+
+Checked Mehal's code fix `b5efa88` on main snapshot `e8fbcce`. This supersedes
+only the restart and dependency-version findings in the earlier 11:04 audit.
+
+- **Restart VERIFIED fixed:** main now destroys/recreates GuardSystem, PulseSystem,
+  PulseEffects and VisibilitySystem on engine:ready. Chromium exercised three
+  controlled chase/contact captures by guard-gallery across R restarts. Each new run
+  caught again; guards reset exactly to (304,80)/(560,144), suspicion 0, caught flags
+  false, pulse count 0. Guard visuals restored; one darkness overlay and one ring
+  graphics object per run. Pulse listeners stayed 3, ready listeners 1, canvas 1;
+  no page errors. This was controlled capture testing, not three full winning heists.
+- **Version mismatch VERIFIED fixed:** package and lockfile now resolve Vitest 1.6.0
+  with Vite 5.4.21. Standard `npm ci` succeeded without legacy-peer flags;
+  `npm run build` passed (normal Phaser chunk warning).
+- **Root npm test STILL FAILS:** Vitest now starts, but collects the node:test files
+  (`tests/engine/geometry.test.js`, `tests/guards/guards.test.js`) as empty Vitest
+  suites, plus the Playwright browser spec which lacks its nested dependencies in
+  a root-only install. Errors: No test suite found / Failed to load @playwright/test.
+- Mehal's remaining test task: route existing Node and Playwright suites to their
+  correct runners, or explicitly migrate/configure Vitest; make npm test return success
+  for real executed tests. Merely changing versions does not finish runner setup.
+- TEST readings were enabled via a browser-only live→test mode cycle for this check.
+  Initial TEST startup and input-readiness/disconnect-pause findings were not fixed
+  by this commit and are not cleared by this verification. No real BLE test claimed.
+- Verification only: no source/dependency files were modified by Soham.
+
+
 ### Immediate assignments after status check
 
 Soham requested these next steps for all four teammates and their AIs. Read the
