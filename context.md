@@ -914,4 +914,4 @@ context commit verified on main (or publication pending/failed).
   is now clean top-right text over the game (`7d06e12`).
 - 25 Oct 2026 — Shyam: full-screen Mission Failed / Heist Complete screens from the team artwork
   (baked stats/buttons erased; live stats + Replay level / Home / Restart from level 1 / Return
-  to home). Run deaths tracked as `runDeaths` in GameState (`dd19633`).
+  to home). Run deaths tracked as `runDeaths` in GameState (`bc49d85`).
