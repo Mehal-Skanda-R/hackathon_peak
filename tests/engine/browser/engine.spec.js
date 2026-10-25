@@ -17,6 +17,7 @@ test.beforeEach(async ({ page }) => {
 
 test('single canvas, WASD/arrows, normalized diagonal, wall blocking and cover', async ({ page }) => {
   await expect(page.locator('canvas')).toHaveCount(1);
+  expect(await page.locator('canvas').evaluate(canvas => canvas.getContext('2d') !== null)).toBe(true);
   await start(page);
   await page.keyboard.down('d');
   await expect.poll(async () => (await state(page)).player.x).toBeGreaterThan(SPAWN.x + 15);

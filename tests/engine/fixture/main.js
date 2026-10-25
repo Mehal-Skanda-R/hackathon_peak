@@ -27,7 +27,10 @@ class TestScene extends MuseumScene {
 }
 
 const game = new Phaser.Game({
-  type: Phaser.AUTO, parent: 'game', width: WORLD_WIDTH, height: WORLD_HEIGHT,
+  // This art/engine fixture uses no WebGL masks. Canvas avoids embedded-browser
+  // GPU context loss leaving a white, disabled drawing surface after play.
+  // Production keeps its own WebGL renderer for the visibility system.
+  type: Phaser.CANVAS, parent: 'game', width: WORLD_WIDTH, height: WORLD_HEIGHT,
   physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 } } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: [TestScene],

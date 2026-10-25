@@ -6,6 +6,8 @@ export default defineConfig({
   workers: 1,
   use: {
     browserName: 'chromium', baseURL: 'http://127.0.0.1:5174', headless: true,
+    // Prove the preview can complete a heist with WebGL entirely unavailable.
+    launchOptions: { args: ['--disable-webgl'] },
     screenshot: 'only-on-failure',
   },
   webServer: {
