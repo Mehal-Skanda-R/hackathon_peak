@@ -547,7 +547,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | --- | --- | --- | --- |
 | Soham | Engine/art merged; two full baseline wins and victory gating verified; helper/test PR #6 open | Human high-BPM/cover playtest; support Shyam's optional sprite adoption | [PR #6](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/6), `492ce17`; 22 checks pass; two wins; stress trial documented |
 | Shubranshu | TEST auto-start (`9ef7cfa`, `313d719`) + calibration-reset fix and sensor tests (PR #7, merged as `e71c30a`, by Shyam's AI) | Test the real device on the demo laptop | npm test 30 passed incl. 8 sensor; hardware unverified |
-| Shyam | Guards and disposal PR #4 merged; victory freeze verified in two complete wins | Review optional guardTexture helper in PR #6; human balance testing at higher exposure | 18 guard checks pass; routes unchanged; see combined playtest below |
+| Shyam | Guards on main with yellow thief-style sprites + ?/! state icons (`e42b0b1`); also covered sensor/integration tasks (see notes) | Guard balance tweaks after Soham's human playtest | npm test 32 passed; sprites checked in Chromium (patrol/suspicious/chase, darkness), no errors |
 | Mehal | Integration tasks done by Shyam's AI while Mehal's AI is out of quota (see note): PRs #5/#6/#7 merged, Resume + HUD sensor controls on main | Deploy main to Vercel (needs Mehal's account) and verify HTTPS + Bluetooth; rehearse | main `7a0f34a`; npm test 30 passed; build passed; 2 wins + caught/Resume/restart UI run, no errors |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
@@ -609,7 +609,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 - Code: `feature/guard-ai` at `ffc4cdd`; files `src/game/Guard.js`, `src/game/GuardSystem.js`,
   `tests/guards/guards.test.js`. No shared files changed. No PR opened yet.
 - API exactly as section 5. Extra named exports: `GUARD_EVENTS`, `GUARD_ROUTES`,
-  `GUARD_TUNING`, `findPath`. Guards draw their own rectangles + suspicion bar (depth 9).
+  `GUARD_TUNING`, `findPath`. Guards draw yellow thief-style sprites (`guardSpriteTexture`), a state-coloured suspicion bar and a ?/! icon (depth 9); see `e42b0b1`.
 - Routes (tile col,row; revised WALLS): `guard-gallery` (9,2)→(15,2)→(15,14)→(9,14);
   `guard-east` (17,4)→(23,4)→(23,15)→(17,15). Legs walked by 4-direction tile BFS.
 - Adopted tuning = section 4 values (0.25/pulse, 0.08/s decay, hiding ×0.25, chase ≥0.75,
@@ -749,3 +749,6 @@ context commit verified on main (or publication pending/failed).
   sooner (~20 readings at ~1 Hz). TEST stays 3 s. npm test 31 passed. Deployed at
   https://heartbeat-heist.vercel.app (auto-deploys from main). Baseline stability with
   the real wearable is untested; Shubranshu to confirm on the device.
+- 25 Oct 2026 — Shyam: guards now use yellow sprites in the thief's art style (cap, badge,
+  torch, facing/stride) instead of rectangles; '?' suspicious / '!' chase icons and a
+  state-coloured suspicion bar (`e42b0b1`). Visual only; guard logic unchanged.
