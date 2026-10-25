@@ -334,6 +334,60 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Immediate assignments after status check
+
+Soham requested these next steps for all four teammates and their AIs. Read the
+latest remote context/main and confirm an issue is still present before fixing it;
+the audit below describes a specific tested commit. Keep existing ownership/API
+contracts. Mehal coordinates shared entrypoint, GameState, HUD and dependency edits.
+Update this context and your status after each verified milestone using section 8.
+Do not claim another owner's work is complete or overwrite concurrent updates.
+
+**Mehal — make the combined game reliable (integration lead)**
+1. Align root Vite/Vitest and restore standard `npm ci`, `npm test` and
+   `npm run build`; document actual successful commands/versions.
+2. Coordinate initial TEST source activation with Shubranshu; expose working mode,
+   calibration and recovery controls. Gate Start/Resume on fresh, calibrated input
+   (plus real connection in LIVE). Pause player/guards/pulses/run time when input
+   becomes unavailable, keeping HUD/reconnection controls usable.
+3. Fix run lifecycle: dispose/recreate guards, visibility and pulse systems and
+   their scene/window subscriptions; reset positions, suspicion, visuals and timers.
+   Verify two consecutive complete runs without refreshing the page.
+4. Review/merge art PR #3 after compatibility checks. Coordinate integration PRs;
+   do not ask all four AIs to independently rewrite shared files.
+
+**Shubranshu — dependable live and simulated sensor input**
+1. Make TEST readings start through the normal startup/UI path; same-mode selection
+   must not leave the source permanently idle. Coordinate startup wiring with Mehal.
+2. Verify calibration, malformed readings, stale timeout, disconnect and LIVE/TEST
+   switching. Publish accurate fresh/calibrated/connected state for Mehal's gates;
+   provide processed BPM for pulse cadence. Keep sensor logic in sensor-owned files.
+3. Test the actual heart-rate device on the intended laptop/browser. Record exact
+   model, successful readings and observed failures. Code merged is not hardware proof.
+
+**Shyam — guards in actual combined gameplay**
+1. Help Mehal verify patrol, pulse suspicion, hiding, chase and capture in the
+   integrated game, against current map geometry and pulse events.
+2. Focus on the second run: both guards visible at their starting positions,
+   suspicion zero, patrol normal, no duplicate catches or stale display objects.
+   Mehal owns external system recreation; fix guard-internal reset/disposal issues
+   in Guard/GuardSystem and coordinate any shared entrypoint edits.
+3. Verify guards remain inactive during ready/paused/terminal states. Preserve the
+   passing module checks and publish integrated-play evidence, not only unit results.
+
+**Soham — playable museum, artwork and combined playtesting**
+1. Help Mehal integrate art PR #3 using its documented layer/body-center contracts.
+2. Play the combined game with guards and darkness: steal/escape, get caught,
+   restart and successfully play again; check walls, cover, objective gating and
+   route fairness. Include two consecutive runs in the evidence.
+3. Fix map/player/engine problems in owned files. Report sensor/guard/FX integration
+   problems to their owners via the shared context; coordinate shared edits with Mehal.
+
+**Immediate team goal:** one reliable TEST-mode heist that survives restart.
+Then prove the same pipeline with a real sensor, check the deployed HTTPS build,
+record a real-sensor backup and rehearse the demo. Mark these goals complete only
+with actual evidence. No new endpoints or module contract changes are introduced.
+
 ### Latest independent integration check — 25 Oct 2026, 11:04 IST (Soham)
 
 Audited actual `main` code at `f257c43` in a separate clean checkout, plus GitHub PR
@@ -380,10 +434,10 @@ completion. Prior prototype tests do not count; the engine results below are fre
 
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
-| Soham | Engine merged via PR #1; concept-inspired art upgrade ready in PR #3 | Mehal reviews/merges art; use depth notes below for FX | [Art PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), `db5fd09`; 4 geometry + 5 Chromium checks, fixture/root builds and TEST-mode smoke passed |
-| Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
-| Shyam | Guards implemented and tested on `feature/guard-ai`; integration pending | Mehal wires GuardSystem in `src/main.js` (see Shyam's guard handoff) | `feature/guard-ai` @ `ffc4cdd`; `node --test tests/guards/guards.test.js` 14 passed; browser smoke run with local-only wiring, no console errors |
-| Mehal | Integration milestone complete | Hackathon vertical slice complete. All modules integrated and merged to main. | Commits ba8eb96 to ca21070 |
+| Soham | Engine merged; art PR #3 awaiting review | Support art integration; playtest walls/cover/objectives and two consecutive runs | [Art PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), `db5fd09`; 4 geometry + 5 Chromium checks, fixture/root builds and TEST-mode smoke passed |
+| Shubranshu | Sensor code merged; hardware unverified | Fix normal TEST startup with Mehal; verify state/calibration/loss and actual device | Device/model and live results pending |
+| Shyam | Guards merged/wired; component checks pass; lifecycle audit issues open | Verify integrated guards and second-run reset/disposal with Mehal | `feature/guard-ai` @ `ffc4cdd`; `node --test tests/guards/guards.test.js` 14 passed; browser smoke run with local-only wiring, no console errors |
+| Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commits ba8eb96 to ca21070 |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
 - Code: `feature/game-engine` at `8a15f7ed5dc1e4c0a4daa6fc2dd60b3b8bb3b924`,
