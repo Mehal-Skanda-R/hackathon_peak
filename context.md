@@ -119,7 +119,7 @@ tests/
   Screen/CSS coordinates must never enter physics, radius or detection calculations.
 - Soham publishes map width/height/tile size, spawn, artefact, exit, cover and
   geometry helpers in `config.js` before Shyam/Mehal bind routes or visibility to it.
-  **Soham's implemented map ([PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), not yet merged):**
+  **Soham's implemented map ([PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), merged):**
   800 × 544 px, 32 px tiles, 25 × 17 grid, 18 × 18 player body, 160 px/second.
   Spawn (80,464), artefact center (720,80), exit rect (32,416,64,96).
   Full exports, coordinates and wiring: `docs/ENGINE_HANDOFF.md` on `feature/game-engine`.
@@ -339,7 +339,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
-| Soham | Implemented and tested on feature branch; integration pending | Mehal reviews/wires engine; Shyam binds routes/colliders | [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), code `8a15f7e`; 4 geometry + 5 Chromium tests; fixture build passed |
+| Soham | Engine merged via PR #1; concept-inspired art upgrade ready in PR #3 | Mehal reviews/merges art; use depth notes below for FX | [Art PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), `db5fd09`; 4 geometry + 5 Chromium checks, fixture/root builds and TEST-mode smoke passed |
 | Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
 | Shyam | Guards implemented and tested on `feature/guard-ai`; integration pending | Mehal wires GuardSystem in `src/main.js` (see Shyam's guard handoff) | `feature/guard-ai` @ `ffc4cdd`; `node --test tests/guards/guards.test.js` 14 passed; browser smoke run with local-only wiring, no console errors |
 | Mehal | Integration milestone complete | Hackathon vertical slice complete. All modules integrated and merged to main. | Commits ba8eb96 to ca21070 |
@@ -347,7 +347,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
 - Code: `feature/game-engine` at `8a15f7ed5dc1e4c0a4daa6fc2dd60b3b8bb3b924`,
   [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1). Remote tree verified
-  identical to tested local files. PR is open; no merge or full-team completion claimed.
+  identical to tested local files. PR #1 has since been merged; full-team completion is not claimed.
 - Changed: three owned `src/game` modules, `docs/ENGINE_HANDOFF.md`, isolated
   `tests/engine/` fixture/package/lockfile/configs/tests. No shared production files changed.
 - Implemented APIs: the MuseumScene methods above, plus `getState()` for the engine-only
@@ -372,6 +372,32 @@ completion. Prior prototype tests do not count; the engine results below are fre
   immutable/non-spamming snapshots. No known failure in tested cases; hardware and
   production integration remain unverified. `npm run dev` serves engine-only fixture
   on port 5174; this is not the shared production starter or a sensor demonstration.
+
+### Soham's concept-art upgrade — 25 Oct 2026 (IST)
+- [PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), branch
+  `feature/museum-art`, code `db5fd09998c857b93cbda3c6d394b29f16cd2265`; open for review.
+  This is a follow-up to merged engine PR #1, based on integrated main `ca21070`.
+- Soham asked for the PPT concept's visual atmosphere. Added engine-owned helper
+  `src/game/MuseumArt.js`: procedural stone/brick, rugs, banners, plants/statues,
+  warm lamp pools, golden crystal and cyan thief walking frames. Updated MuseumScene,
+  Player and engine fixture styling/tests/handoff. No new external art/font assets.
+- Player is now a 40px visual Sprite with the original centered 18px Arcade body.
+  Initial inset is synchronized before ready pauses physics. Map, routes, movement,
+  hiding logic, objectives, lifecycle and public engine event/state contracts unchanged.
+- Layers exposed on scene: `worldArt` depth 0, `exitVisual` 2, `artefactVisual` 4,
+  player 10. Invisible collision rectangles remain in `scene.walls`. All fit under
+  Mehal's darkness overlay 50 and pulse graphics 51. Lamp glows are baked scenery;
+  real visibility/pulse behavior still belongs to Mehal. Texture cache reused on restart.
+- Art preview at port 5174 has a responsive museum frame/mission panel. These are
+  fixture files only; production HUD, main.js and src/style.css were not modified.
+- Fresh checks: 4 geometry + 5 Chromium gameplay/lifecycle passed; fixture build
+  passed (~338 kB gzip); desktop/390px screenshots inspected, no horizontal overflow.
+  Against integrated main base `ca21070`, root npm ci/build passed; TEST-mode smoke
+  showed one canvas, Start → PLAYING, movement and pulse/darkness over art, no page errors.
+  Real BLE/guard integration not tested by this pass. Root lockfile audit warnings
+  were inherited; shared dependency owner can address them.
+- Mehal: merge PR #3 and retain overlay depths. See docs/ENGINE_HANDOFF.md in that
+  branch for artwork, body-center and cleanup details. Full-team balance still pending.
 
 ### Shyam's guard handoff — 25 Oct 2026 (IST)
 - Code: `feature/guard-ai` at `ffc4cdd`; files `src/game/Guard.js`, `src/game/GuardSystem.js`,
