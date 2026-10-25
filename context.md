@@ -800,3 +800,6 @@ context commit verified on main (or publication pending/failed).
   can no longer be seen or caught by guards; a chasing guard loses them and gives up after
   3 s. Pulses while hidden still add 0.25x suspicion. Supersedes "cover is not invulnerability
   to physical capture" in section 4. Commit `86d6942`; npm test 34 passed.
+- 25 Oct 2026 — Shyam: round-start map preview. Each ready -> playing transition shows the
+  whole museum for 1 s, then fades to dark over 0.5 s (`VisibilitySystem.revealAll`, `b2ad925`).
+  Visual only (no guard exposure); Resume does not trigger it; never a permanent reveal.
