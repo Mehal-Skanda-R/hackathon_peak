@@ -23,9 +23,81 @@ const BORDER = [
   tileRect(0, 1, 1, 15), tileRect(24, 1, 1, 15),
 ];
 
-// Levels play in order. Entering a level's door moves on to the next level
-// with no way back; the crystal is the collectable of the final level only,
-// and that level's door opens only once it is carried. Coins are an optional
+// Text-grid levels (25 x 17). Legend:
+//   '#' wall   'b' wall with a banner   's' statue (2x2 wall)   'K' exhibit (wall)
+//   'P' pool (wall)   '.' floor   'h' cover (2x2)   'r' decorative rug   'c' coin
+//   'l' lamp (floor)  '=' bridge (floor)
+// spawn/entrance/door/artefact are given in tiles: [column, row(, columns, rows)].
+const WALL_CHARS = new Set(['#', 'b', 's', 'K', 'P']);
+
+// Merge cells whose character is in `chars` into as few rectangles as possible:
+// horizontal runs per row, then identical runs stacked over consecutive rows.
+function mergeCells(rows, chars, skip = new Set()) {
+  const done = [];
+  let open = new Map();
+  rows.forEach((line, row) => {
+    const next = new Map();
+    for (let column = 0; column < line.length;) {
+      if (!chars.has(line[column]) || skip.has(`${column},${row}`)) { column++; continue; }
+      const start = column;
+      while (column < line.length && chars.has(line[column]) && !skip.has(`${column},${row}`)) column++;
+      const key = `${start}:${column - start}`;
+      const rect = open.get(key);
+      if (rect) { rect.rows++; open.delete(key); next.set(key, rect); }
+      else next.set(key, { column: start, row, columns: column - start, rows: 1 });
+    }
+    done.push(...open.values());
+    open = next;
+  });
+  done.push(...open.values());
+  return done.map(r => tileRect(r.column, r.row, r.columns, r.rows));
+}
+
+function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
+  if (rows.length !== MAP_ROWS || rows.some(line => line.length !== MAP_COLUMNS)) {
+    throw new Error(`Level ${id} must be ${MAP_COLUMNS} x ${MAP_ROWS}`);
+  }
+  const statues = [];
+  const hidingZones = [];
+  const statueCells = new Set();
+  const coinTiles = [];
+  const banners = [];
+  const lamps = [];
+  rows.forEach((line, row) => [...line].forEach((ch, column) => {
+    const topLeft = line[column - 1] !== ch && rows[row - 1]?.[column] !== ch;
+    if (ch === 's' && topLeft) {
+      statues.push(tileRect(column, row, 2, 2));
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) statueCells.add(`${column + dx},${row + dy}`);
+    }
+    if (ch === 'h' && topLeft) hidingZones.push(cover(`${id}-cover-${hidingZones.length + 1}`, column, row));
+    if (ch === 'c') coinTiles.push([column, row]);
+    if (ch === 'b') banners.push([column * TILE_SIZE + 8, row * TILE_SIZE + 2]);
+    if (ch === 'l') lamps.push([column * TILE_SIZE + 16, row * TILE_SIZE + 10]);
+  }));
+  const exhibits = mergeCells(rows, new Set(['K']));
+  const pools = mergeCells(rows, new Set(['P']));
+  const walls = [...mergeCells(rows, new Set(['#', 'b'])), ...statues, ...exhibits, ...pools];
+  return Object.freeze({
+    id, name,
+    walls: Object.freeze(walls),
+    hidingZones: Object.freeze(hidingZones),
+    spawn: center(...spawn),
+    entrance: tileRect(...entrance),
+    door: tileRect(...door),
+    artefact: artefact ? Object.freeze({ ...center(...artefact), size: 20 }) : null,
+    coins: coins(coinTiles),
+    decor: Object.freeze({
+      rugs: mergeCells(rows, new Set(['r'])).map(r => [r.x + 3, r.y + 3, r.width - 6, r.height - 6]),
+      banners, lamps, statues, exhibits, pools,
+      bridges: mergeCells(rows, new Set(['='])),
+    }),
+  });
+}
+
+// Levels play in order (level 1 + levels 02-07 from the team's concept sheet).
+// Entering a level's door moves on to the next level with no way back; the
+// crystal is the collectable of the final level only, placed at its door,
+// and that door opens only once it is carried. Coins are an optional
 // score. `entrance` is the closed door the thief arrived through (decor only).
 export const LEVELS = Object.freeze([
   Object.freeze({
@@ -57,33 +129,143 @@ export const LEVELS = Object.freeze([
       lamps: [[42, 57], [241, 146], [297, 65], [490, 281], [549, 62], [747, 149], [45, 328], [746, 463]],
     }),
   }),
-  Object.freeze({
-    id: 'vault', name: 'The Vault',
-    walls: Object.freeze([
-      ...BORDER,
-      tileRect(8, 1, 1, 5), tileRect(8, 8, 1, 5),      // west divider: gaps rows 6-7, 13-15
-      tileRect(1, 5, 5, 1),                            // vault wall, opening cols 6-7
-      tileRect(1, 11, 5, 1),                           // west lower room, opening cols 6-7
-      tileRect(16, 4, 1, 5), tileRect(16, 11, 1, 5),   // east divider: gaps rows 1-3, 9-10
-      tileRect(17, 8, 5, 1),                           // east partition, opening cols 22-23
-      tileRect(11, 3, 2, 2), tileRect(11, 12, 2, 2), tileRect(19, 4, 2, 2), tileRect(19, 12, 2, 2),
-      tileRect(9, 8, 4, 1),                            // central partition
-    ]),
-    // The vault has its own cover so it can never become an inescapable dead end.
-    hidingZones: Object.freeze([cover('vault-cover', 3, 2), cover('west-cover', 2, 7),
-      cover('central-cover', 13, 9), cover('east-cover', 21, 10)]),
-    spawn: center(22, 14),
-    entrance: tileRect(22, 13, 2, 3),
-    door: tileRect(1, 13, 2, 3),
-    artefact: Object.freeze({ ...center(2, 2), size: 20 }),
-    coins: coins([[7, 1], [1, 4], [7, 9], [1, 6], [9, 1], [15, 1], [9, 15], [15, 7],
-      [17, 1], [23, 1], [23, 6], [17, 15], [12, 10]]),
-    decor: Object.freeze({
-      rugs: [[96, 422, 64, 64], [430, 72, 46, 64], [600, 300, 64, 46]],
-      banners: [[264, 300], [520, 170], [600, 252]],
-      lamps: [[42, 40], [300, 60], [480, 60], [560, 40], [747, 60], [45, 230], [300, 300],
-        [480, 470], [747, 300], [560, 470]],
-    }),
+  asciiLevel({
+    id: 'west-wing', name: 'The West Wing',
+    spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#c...#.......l#.....rr.c#",
+      "#.ss.#........#.....rr..#",
+      "#.ss.#..hh....#..#####..#",
+      "#....#..hh....#..#ss....#",
+      "#.........c......#ss..c.#",
+      "####.#####...#####......#",
+      "#l...#.........#........#",
+      "#.rr.#..rrrr...#..hh..l.#",
+      "#.rr.#..rrrr...#..hh....#",
+      "#.........c....######.###",
+      "#####.###..#####....c...#",
+      "#c..#....#.#.......ss...#",
+      "#...#.hh.#.#..c....ss..c#",
+      "#...#.hh...#............#",
+      "#.........c#.l......c...#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'gallery-hall', name: 'The Gallery Hall',
+    spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#c..l.#....b.....#..rr.c#",
+      "#.....#.....ss...#..rr..#",
+      "#.hh..#.....ss...#......#",
+      "#.hh.....c.......###.##.#",
+      "###.###.........l.......#",
+      "#.....#.KKKKKKKKK.#.hh..#",
+      "#..c..#.KKKKKKKKK.#.hh..#",
+      "#......cKKKKKKKKK.....c.#",
+      "#.rr..#.KKKKKKKKK.#.....#",
+      "#.rr..#.KKKKKKKKK.#..ss.#",
+      "#.....#...........#..ss.#",
+      "####.##############.....#",
+      "#c......#c.hh.#.l....c..#",
+      "#.......#..hh.#.........#",
+      "#....l.....c..#....c....#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'archive', name: 'The Archive',
+    spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#c....l#.........#....c.#",
+      "#.####.#.#####.#.#.####.#",
+      "#.#..#...#...#.#...#..#.#",
+      "#.#hh#.###.#.#.#####hh#.#",
+      "#..hh......#c#......hh..#",
+      "####.#####.#.#####.######",
+      "#c...#rr...#...l.#......#",
+      "#.##.#rr.###.###.#.####.#",
+      "#..#.....#.....#...#..#.#",
+      "##.#####.#.hh..#.#.#c.#.#",
+      "#..#..c..#.hh..#.#...##.#",
+      "#..#.###.###########....#",
+      "#....#l..........##.....#",
+      "#.....####.####..##c....#",
+      "#.......c....c.....#....#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'vault-ring', name: 'The Vault Ring',
+    spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#c...l.....b.....l....c.#",
+      "#.hh....................#",
+      "#.hh.#######.#######.hh.#",
+      "#....#.....c.c.....#.hh.#",
+      "#.rr.#.###########.#....#",
+      "#.rr.#.#....c....#.#.rr.#",
+      "#......#.###.###.#.#.rr.#",
+      "#c...#.#.#cc.cc#.#......#",
+      "#....#.#.#######.#...c..#",
+      "#.rr.#.#....c....#.#....#",
+      "#.rr.#.######.####.#.hh.#",
+      "#....#.....c.......#.hh.#",
+      "#..hh###############....#",
+      "#..hh..l.....c..#....c..#",
+      "#...........c...#.......#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'royal-exhibit', name: 'The Royal Exhibit',
+    spawn: [23, 15], entrance: [22, 14, 2, 2], door: [1, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#c..l...#....b....#..l.c#",
+      "#.ss....#.........#..ss.#",
+      "#.ss....#....c....#..ss.#",
+      "#.......####.######.....#",
+      "#..hh...................#",
+      "#..hh..PPPPP=PPPPP..hh..#",
+      "#......PPPPP=PPPPP..hh..#",
+      "#.c....PPPPP=PPPPP....c.#",
+      "#......PPPPP=PPPPP......#",
+      "#.rr.#######=#######....#",
+      "#.rr.#####..c..#####.rr.#",
+      "#....#.ss.......ss.#.rr.#",
+      "#....#.ss..l#...ss.#....#",
+      "#....#......#......#....#",
+      "#..c.#.....c#c.....#.c..#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'final-heist', name: 'The Final Heist',
+    spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: [20, 15],
+    rows: [
+      "#########################",
+      "#c..l..#....b....#..l..c#",
+      "#.hh...#.........#...hh.#",
+      "#.hh.#.#.###.###.#.#.hh.#",
+      "#....#...#.....#...#....#",
+      "###.####.#.ss..#.####.###",
+      "#c.....#.#.ss..#.#.....c#",
+      "#.rr...#.###.###.#...rr.#",
+      "#.rr.....l.....l.....rr.#",
+      "#......####...####......#",
+      "####.###.#..c..#.###.####",
+      "#......#.#######.#......#",
+      "#.hh...#.........#...hh.#",
+      "#.hh.#####..c..###.#.hh.#",
+      "#....#.............#....#",
+      "#...c#.....c...c...#....#",
+      "#########################",
+    ],
   }),
 ]);
 

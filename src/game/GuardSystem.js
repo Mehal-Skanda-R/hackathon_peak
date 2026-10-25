@@ -21,11 +21,34 @@ export const GUARD_ROUTES = Object.freeze({
 // Routes per level (config.LEVELS ids). GUARD_ROUTES is level 1, 'gallery'.
 export const GUARD_ROUTES_BY_LEVEL = Object.freeze({
   gallery: GUARD_ROUTES,
-  vault: Object.freeze({
-    // Central hall loop past both westward gaps (rows 6-7 and 13-15).
-    'guard-hall': [[9, 6], [15, 6], [15, 14], [9, 14]],
-    // East wing above the partition, between the start and the top corridor.
-    'guard-east': [[17, 2], [23, 2], [23, 6], [17, 6]],
+  'west-wing': Object.freeze({
+    'guard-hall': [[6, 7], [14, 7], [14, 10], [6, 10]],
+    'guard-east': [[16, 7], [23, 7], [23, 15], [12, 14]],
+  }),
+  'gallery-hall': Object.freeze({
+    'guard-ring': [[7, 5], [17, 5], [17, 11], [7, 11]],        // around the skeleton
+    'guard-east': [[19, 12], [23, 12], [23, 15], [15, 15]],
+  }),
+  archive: Object.freeze({
+    'guard-stacks': [[4, 7], [10, 7], [10, 9], [4, 9]],
+    'guard-reading': [[12, 13], [16, 13], [16, 15], [9, 15]],
+    'guard-east': [[18, 7], [23, 7], [23, 11], [20, 11]],
+  }),
+  'vault-ring': Object.freeze({
+    'guard-outer': [[4, 2], [20, 2], [18, 14], [6, 14]],
+    'guard-middle': [[6, 4], [18, 4], [18, 12], [6, 12]],
+    'guard-inner': [[8, 6], [16, 6], [16, 10], [8, 10]],
+  }),
+  'royal-exhibit': Object.freeze({
+    'guard-pool': [[5, 5], [19, 5], [19, 9], [5, 9]],          // around the pool
+    'guard-south': [[10, 12], [14, 12], [14, 14], [10, 14]],
+    'guard-north': [[9, 2], [17, 2], [17, 3], [9, 3]],
+  }),
+  'final-heist': Object.freeze({
+    'guard-north': [[8, 2], [16, 2], [16, 4], [8, 4]],
+    'guard-west': [[2, 6], [6, 6], [6, 9], [2, 9]],
+    'guard-east': [[18, 6], [22, 6], [22, 9], [18, 9]],
+    'guard-door': [[6, 14], [18, 14], [18, 15], [6, 15]],     // the crystal and door
   }),
 });
 

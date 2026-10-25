@@ -37,13 +37,14 @@ test('every waypoint is walkable and every route leg is reachable', () => {
   }
 });
 
-test('every level has two guard routes on walkable, mutually reachable tiles', () => {
+test('every level has 2-4 guard routes on walkable, mutually reachable tiles', () => {
   try {
     for (const [index, level] of LEVELS.entries()) {
       setLevel(index);
       const routes = GUARD_ROUTES_BY_LEVEL[level.id];
       assert.ok(routes, `routes for ${level.id}`);
-      assert.equal(Object.keys(routes).length, 2);
+      const count = Object.keys(routes).length;
+      assert.ok(count >= 2 && count <= 4, `${level.id} has ${count} guards`);
       for (const [id, route] of Object.entries(routes)) {
         route.forEach(([c, r], i) => {
           assert.ok(canOccupy(at(c, r).x, at(c, r).y, GUARD_TUNING.bodySize), `${level.id}/${id} waypoint ${i}`);

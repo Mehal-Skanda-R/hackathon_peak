@@ -86,6 +86,51 @@ function statue(ctx, wall) {
   ctx.fillStyle = '#152824'; ctx.fillRect(x - 3, y - 21, 2, 2);
 }
 
+// Water basin for 'P' cells: dark water, soft ripples, stone lip.
+function pool(ctx, r) {
+  ctx.fillStyle = '#071a24'; ctx.fillRect(r.x, r.y, r.width, r.height);
+  const water = ctx.createLinearGradient(r.x, r.y, r.x, r.y + r.height);
+  water.addColorStop(0, '#0f3a4a'); water.addColorStop(1, '#0a2733');
+  ctx.fillStyle = water; ctx.fillRect(r.x + 4, r.y + 4, r.width - 8, r.height - 8);
+  ctx.strokeStyle = 'rgba(140,210,220,.18)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 9; i++) {
+    const x = r.x + 10 + hash(r.x, i) * (r.width - 30), y = r.y + 10 + hash(r.y, i) * (r.height - 20);
+    ctx.beginPath(); ctx.ellipse(x, y, 9, 2.5, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.strokeStyle = '#7d8a7f'; ctx.lineWidth = 3; ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.width - 3, r.height - 3);
+}
+
+// Wooden bridge for '=' cells (floor), drawn across the pool gap.
+function bridge(ctx, r) {
+  ctx.fillStyle = '#3b2a1a'; ctx.fillRect(r.x + 2, r.y, r.width - 4, r.height);
+  ctx.strokeStyle = '#6e5233'; ctx.lineWidth = 1;
+  for (let y = r.y + 4; y < r.y + r.height; y += 6) { ctx.beginPath(); ctx.moveTo(r.x + 3, y); ctx.lineTo(r.x + r.width - 3, y); ctx.stroke(); }
+  ctx.fillStyle = '#a07a45'; ctx.fillRect(r.x + 2, r.y, 2, r.height); ctx.fillRect(r.x + r.width - 4, r.y, 2, r.height);
+}
+
+// Raised display with a dinosaur skeleton for 'K' cells.
+function exhibit(ctx, r) {
+  ctx.fillStyle = '#0c1418'; ctx.fillRect(r.x, r.y, r.width, r.height);
+  ctx.fillStyle = '#2a2a24'; ctx.fillRect(r.x + 6, r.y + 6, r.width - 12, r.height - 12);
+  ctx.strokeStyle = '#a99467'; ctx.lineWidth = 2; ctx.strokeRect(r.x + 6, r.y + 6, r.width - 12, r.height - 12);
+  const cx = r.x + r.width / 2, cy = r.y + r.height / 2 + 6, s = Math.min(r.width / 260, r.height / 150);
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+  ctx.strokeStyle = '#d8cfb6'; ctx.fillStyle = '#d8cfb6'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); // spine and tail
+  ctx.moveTo(-95, -10); ctx.quadraticCurveTo(-30, -45, 40, -25); ctx.quadraticCurveTo(80, -15, 115, 5); ctx.stroke();
+  for (let i = 0; i < 9; i++) { // ribs
+    const x = -60 + i * 10; ctx.beginPath(); ctx.moveTo(x, -32 + Math.abs(i - 4) * 2); ctx.quadraticCurveTo(x + 4, -5, x - 2, 12); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(-70, -15); ctx.lineTo(-78, 40); ctx.moveTo(-40, -20); ctx.lineTo(-34, 40); // legs
+  ctx.moveTo(10, -22); ctx.lineTo(4, 40); ctx.moveTo(30, -22); ctx.lineTo(38, 40); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-95, -10); ctx.lineTo(-115, -55); ctx.stroke(); // neck
+  ctx.beginPath(); ctx.ellipse(-122, -62, 13, 8, -0.4, 0, Math.PI * 2); ctx.fill(); // skull
+  ctx.fillStyle = '#2a2a24'; ctx.beginPath(); ctx.arc(-124, -64, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#c9b27a'; ctx.font = 'bold 9px serif'; ctx.textAlign = 'center';
+  ctx.fillText('PREHISTORIC HALL', cx, r.y + r.height - 12);
+}
+
 function paintMuseum(ctx) {
   ctx.fillStyle = '#091116'; ctx.fillRect(0, 0, W, H);
   for (let row = 0; row < H / T; row++) for (let col = 0; col < W / T; col++) {
@@ -123,7 +168,11 @@ function paintMuseum(ctx) {
   }
 
   // The stone blocks themselves match the collision rectangles exactly.
+  // Pools and exhibits are walls too, but get their own art below.
+  const special = new Set([...(LEVEL.decor.pools ?? []), ...(LEVEL.decor.exhibits ?? [])]);
+  const statues = LEVEL.decor.statues ?? WALLS.filter(w => w.width === 64 && w.height === 64);
   for (const wall of WALLS) {
+    if (special.has(wall)) continue;
     ctx.shadowColor = 'rgba(0,0,0,.75)'; ctx.shadowBlur = 9; ctx.shadowOffsetY = 6;
     ctx.fillStyle = '#10191f'; ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
     ctx.shadowColor = 'transparent'; ctx.shadowOffsetY = 0; ctx.shadowBlur = 0;
@@ -141,8 +190,11 @@ function paintMuseum(ctx) {
     ctx.strokeRect(wall.x + 1.5, wall.y + 1.5, wall.width - 3, wall.height - 3);
     ctx.strokeStyle = '#101b20'; ctx.lineWidth = 2;
     ctx.strokeRect(wall.x + 4, wall.y + 4, wall.width - 8, wall.height - 8);
-    if (wall.width === 64 && wall.height === 64) statue(ctx, wall);
+    if (statues.includes(wall)) statue(ctx, wall);
   }
+  for (const r of LEVEL.decor.pools ?? []) pool(ctx, r);
+  for (const r of LEVEL.decor.bridges ?? []) bridge(ctx, r);
+  for (const r of LEVEL.decor.exhibits ?? []) exhibit(ctx, r);
 
   // Decorative banners on wall faces, not additional obstacles.
   for (const [x, y] of LEVEL.decor.banners) {
