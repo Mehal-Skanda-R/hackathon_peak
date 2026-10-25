@@ -132,6 +132,11 @@ body.home-open { overflow: hidden; }
 .hotspot:hover, .hotspot:focus-visible { border-color: #f0d48acc; background: #f0d48a14; box-shadow: 0 0 18px #f0d48a55, inset 0 0 12px #f0d48a22; outline: none; }
 .hotspot.locked { cursor: not-allowed; }
 .hotspot.locked:hover, .hotspot.locked:focus-visible { border-color: #8a939bcc; background: #00000033; box-shadow: none; }
+/* Floor cards cover the artwork's printed cards (text and lock icons): their
+   hover/focus background must stay opaque or the printed card ghosts through. */
+.home-art .floor-spot:hover, .home-art .floor-spot:focus-visible { background: #132029; }
+.home-art .floor-spot.selected:hover, .home-art .floor-spot.selected:focus-visible { background: #1d2b32; }
+.home-art .floor-spot.locked:hover, .home-art .floor-spot.locked:focus-visible { background: #0b151d; }
 .home-toast { position: absolute; left: 50%; bottom: 5%; transform: translate(-50%, 8px); padding: 10px 16px; border: 1px solid #c6ae7e;
   border-radius: 6px; background: #0b1218ee; color: #f0d48a; font-size: 13px; letter-spacing: .5px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
 .home-toast.show { opacity: 1; transform: translate(-50%, 0); }
