@@ -14,40 +14,57 @@ class IntegrationScene extends Phaser.Scene {
         const museum = this.scene.get('MuseumScene');
         const mapGeometry = museum.getMapGeometry();
         
-        const pulseSystem = new PulseSystem(museum);
-        const visibilitySystem = new VisibilitySystem(museum, mapGeometry);
-        const guardSystem = new GuardSystem(museum, mapGeometry);
-        
-        const pulseEffects = new PulseEffects(museum);
-        pulseEffects.graphics.setDepth(51);
+        // Use let so we can overwrite these on restart
+        let pulseSystem, visibilitySystem, guardSystem, pulseEffects;
+
+        const initSystems = () => {
+            // Destroy old instances to clear out graphics and event listeners
+            if (visibilitySystem && typeof visibilitySystem.destroy === 'function') visibilitySystem.destroy();
+            if (guardSystem && typeof guardSystem.destroy === 'function') guardSystem.destroy();
+            if (pulseEffects && typeof pulseEffects.destroy === 'function') pulseEffects.destroy();
+            if (pulseSystem && typeof pulseSystem.destroy === 'function') pulseSystem.destroy();
+            
+            pulseSystem = new PulseSystem(museum);
+            visibilitySystem = new VisibilitySystem(museum, mapGeometry);
+            guardSystem = new GuardSystem(museum, mapGeometry);
+            pulseEffects = new PulseEffects(museum);
+            pulseEffects.graphics.setDepth(51);
+        };
+
+        // Initialize systems for the first run
+        initSystems();
+
+        // Recreate all systems whenever the player hits R and restarts
+        museum.events.on('engine:ready', () => {
+            initSystems();
+        });
 
         museum.events.on('engine:state', (engineState) => {
             updateGameState(engineState);
         });
 
-        // Wire Shyam's guards:caught event to Soham's catchPlayer API
         museum.events.on('guards:caught', () => {
             museum.catchPlayer();
         });
 
-        // Pass pulses to the guard system only while playing
         museum.events.on('heartbeat:pulse', (pulse) => {
-            if (getGameState().status === 'playing') {
+            if (getGameState().status === 'playing' && guardSystem) {
                 if (typeof guardSystem.handlePulse === 'function') guardSystem.handlePulse(pulse);
             }
         });
 
         museum.events.on('update', (time, delta) => {
             const state = getGameState();
-            pulseSystem.update(delta, state.sensor, state);
-            pulseEffects.update(delta);
-            visibilitySystem.update(delta);
+            if (pulseSystem) pulseSystem.update(delta, state.sensor, state);
+            if (pulseEffects) pulseEffects.update(delta);
+            if (visibilitySystem) visibilitySystem.update(delta);
             
-            // Update guards and push their state to the HUD
-            if (state.status === 'playing') {
+            if (state.status === 'playing' && guardSystem) {
                 guardSystem.update(delta, state.player);
             }
-            updateGameState({ guards: guardSystem.getStates() });
+            if (guardSystem) {
+                updateGameState({ guards: guardSystem.getStates() });
+            }
         });
 
         window.addEventListener('hud-start-clicked', () => {
