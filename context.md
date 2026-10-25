@@ -121,7 +121,7 @@ tests/
   geometry helpers in `config.js` before Shyam/Mehal bind routes or visibility to it.
   **Soham's implemented map ([PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), not yet merged):**
   800 × 544 px, 32 px tiles, 25 × 17 grid, 18 × 18 player body, 160 px/second.
-  Spawn (80,464), artefact center (720,112), exit rect (32,416,64,96).
+  Spawn (80,464), artefact center (720,80), exit rect (32,416,64,96).
   Full exports, coordinates and wiring: `docs/ENGINE_HANDOFF.md` on `feature/game-engine`.
 - Automatic artefact pickup on overlap; exit only wins while carrying artefact.
 - Hiding is true when the full player body lies in a marked cover zone. Moving
@@ -339,13 +339,13 @@ completion. Prior prototype tests do not count; the engine results below are fre
 
 | Owner | Current status | Next action | Commit / PR / verified checks |
 | --- | --- | --- | --- |
-| Soham | Implemented and tested on feature branch; integration pending | Mehal reviews/wires engine; Shyam binds routes/colliders | [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), code `b1e8d91`; 4 geometry + 5 Chromium tests; fixture build passed |
+| Soham | Implemented and tested on feature branch; integration pending | Mehal reviews/wires engine; Shyam binds routes/colliders | [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), code `8a15f7e`; 4 geometry + 5 Chromium tests; fixture build passed |
 | Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
 | Shyam | Assigned; guards not implemented | Agree geometry dependency; implement patrol + pulse response | None for fresh build |
 | Mehal | Starter initialized on main. Moving to PulseSystem and UI. | Initialize Vite/Phaser 3 once and publish starter commit | None for fresh build |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
-- Code: `feature/game-engine` at `b1e8d912a70a04bf6f6538a086604d33bda09dab`,
+- Code: `feature/game-engine` at `8a15f7ed5dc1e4c0a4daa6fc2dd60b3b8bb3b924`,
   [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1). Remote tree verified
   identical to tested local files. PR is open; no merge or full-team completion claimed.
 - Changed: three owned `src/game` modules, `docs/ENGINE_HANDOFF.md`, isolated
@@ -353,6 +353,12 @@ completion. Prior prototype tests do not count; the engine results below are fre
 - Implemented APIs: the MuseumScene methods above, plus `getState()` for the engine-only
   snapshot. Named `ENGINE_EVENTS`, frozen geometry/helpers, `scene.walls` StaticGroup
   for guard colliders. Player coordinates come from the current Arcade body center.
+- Playtest layout revision (25 Oct 2026): Soham found reaching the artefact too easy.
+  Closed the bottom gallery shortcut, added central/artefact-room partitions and moved
+  artefact center to (720,80). Shortest four-direction route: 44 tiles (1408 px),
+  formerly 31 (992 px). All floor/cover/objectives remain reachable; 4 geometry +
+  5 browser tests freshly passed. Shyam must use the revised WALLS for guard routes.
+  No module API, world-size, movement-speed or cover-position change.
 - Lifecycle: initial ready; explicit Start; paused with reason; terminal locks; R/HUD
   restart returns to ready. Restart key uses down events so short taps are not lost.
 - Integration: enforce fresh/calibrated source before Start/Resume in Mehal's caller.
