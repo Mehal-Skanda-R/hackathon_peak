@@ -8,6 +8,7 @@ export function initHUD() {
       <div id="hud-bpm">BPM: --</div>
       <div id="hud-status">STATUS: READY</div>
       <button id="start-btn" style="margin-top:10px; padding:5px 10px; background:lime; color:black; font-family:monospace; font-weight:bold; border:none; cursor:pointer;">START RUN</button>
+      <button id="ble-btn" style="margin-top:10px; padding:5px 10px; background:cyan; color:black; font-family:monospace; font-weight:bold; border:none; cursor:pointer;">CONNECT BLE</button>
     </div>
   `;
 
@@ -15,15 +16,16 @@ export function initHUD() {
   const bpmEl = document.getElementById('hud-bpm');
   const statusEl = document.getElementById('hud-status');
   const startBtn = document.getElementById('start-btn');
+  const bleBtn = document.getElementById('ble-btn');
 
-  startBtn.addEventListener('click', () => {
-      window.dispatchEvent(new Event('hud-start-clicked'));
-  });
+  startBtn.addEventListener('click', () => window.dispatchEvent(new Event('hud-start-clicked')));
+  bleBtn.addEventListener('click', () => window.dispatchEvent(new Event('hud-ble-clicked')));
 
   subscribeToGameState((state) => {
     modeEl.innerText = `MODE: ${state.sensor.mode.toUpperCase()}`;
     bpmEl.innerText = `BPM: ${state.sensor.bpm || '--'}`;
     statusEl.innerText = `STATUS: ${state.status.toUpperCase()}`;
     startBtn.style.display = state.status === 'ready' ? 'block' : 'none';
+    bleBtn.style.display = state.sensor.connected ? 'none' : 'block';
   });
 }
