@@ -6,6 +6,7 @@ const start = page => page.getByRole('button', { name: 'Start engine test' }).cl
 const place = (page, x, y) => page.evaluate(({ x, y }) => {
   const scene = window.__ENGINE_TEST__.scene.getScene('MuseumScene');
   scene.player.body.reset(x, y);
+  scene.player.body.updateFromGameObject();
 }, { x, y });
 
 test.beforeEach(async ({ page }) => {
@@ -125,12 +126,13 @@ test('walk the whole heist, pickup once, exit gating, victory lock, restart', as
     s.setPaused(false);
   });
   expect((await state(page)).status).toBe('ready');
-  await page.screenshot({ path: testInfo.outputPath('museum.png') });
+  await page.screenshot({ path: testInfo.outputPath('museum.png'), fullPage: true });
   expect(errors).toEqual([]);
 });
 
 test('pause blocks movement/objectives; caught is idempotent; repeated restarts clean up', async ({ page }) => {
   await start(page);
+  await page.waitForFunction(() => window.__ENGINE_TEST__.scene.getScene('MuseumScene').physics.world.colliders.getActive().length === 3);
   await page.evaluate(() => window.__ENGINE_TEST__.scene.getScene('MuseumScene').setPaused(true, 'signal stale'));
   await page.keyboard.down('d');
   await page.waitForTimeout(150);

@@ -12,6 +12,9 @@ class TestScene extends MuseumScene {
         window.engineEvents.push({ event, state });
         document.querySelector('#status').textContent = state.status
           + (state.pauseReason ? ` (${state.pauseReason})` : '');
+        document.querySelector('#objective').textContent = state.hasArtefact
+          ? 'The crystal is yours. Return to the marked exit.'
+          : 'Find the crystal. Take it. Get back to the exit.';
       };
       this.events.on(event, listener);
       return [event, listener];
