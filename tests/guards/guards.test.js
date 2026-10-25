@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MAP_GEOMETRY, canOccupy, hasLineOfSight } from '../../src/game/config.js';
 import Guard, { GUARD_TUNING, findPath } from '../../src/game/Guard.js';
-import GuardSystem, { GUARD_ROUTES, GUARD_EVENTS } from '../../src/game/GuardSystem.js';
+import GuardSystem, { GUARD_ROUTES, GUARD_ROUTES_BY_LEVEL, GUARD_EVENTS } from '../../src/game/GuardSystem.js';
+import { LEVELS, setLevel } from '../../src/game/config.js';
 
 const T = MAP_GEOMETRY.tileSize;
 const at = (c, r) => ({ x: (c + 0.5) * T, y: (r + 0.5) * T });
@@ -34,6 +35,24 @@ test('every waypoint is walkable and every route leg is reachable', () => {
       assert.ok(findPath(at(c, r), at(nc, nr), MAP_GEOMETRY).length > 0, `${id} leg ${i}`);
     });
   }
+});
+
+test('every level has two guard routes on walkable, mutually reachable tiles', () => {
+  try {
+    for (const [index, level] of LEVELS.entries()) {
+      setLevel(index);
+      const routes = GUARD_ROUTES_BY_LEVEL[level.id];
+      assert.ok(routes, `routes for ${level.id}`);
+      assert.equal(Object.keys(routes).length, 2);
+      for (const [id, route] of Object.entries(routes)) {
+        route.forEach(([c, r], i) => {
+          assert.ok(canOccupy(at(c, r).x, at(c, r).y, GUARD_TUNING.bodySize), `${level.id}/${id} waypoint ${i}`);
+          const [nc, nr] = route[(i + 1) % route.length];
+          assert.ok(findPath(at(c, r), at(nc, nr), MAP_GEOMETRY).length > 0, `${level.id}/${id} leg ${i}`);
+        });
+      }
+    }
+  } finally { setLevel(0); }
 });
 
 test('two guards patrol without ever entering a wall', () => {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE, MAP_COLUMNS, MAP_ROWS, WALLS,
-  SPAWN, ARTEFACT, EXIT, HIDING_ZONES, PLAYER_SPEED,
+  SPAWN, PLAYER_SPEED, LEVELS, setLevel,
   canOccupy, hasLineOfSight, getHidingZone, movementVelocity } from '../../src/game/config.js';
 
 test('walls are within the 800 × 544 world; invalid/outside positions are blocked', () => {
@@ -19,33 +19,43 @@ test('walls are within the 800 × 544 world; invalid/outside positions are block
   assert.equal(canOccupy(40, 100), false);
 });
 
-test('all floor/objectives remain reachable and the artefact route requires a detour', t => {
-  const start = [Math.floor(SPAWN.x / TILE_SIZE), Math.floor(SPAWN.y / TILE_SIZE)];
-  const queue = [start];
-  const visited = new Set([start.join(',')]);
-  const distances = new Map([[start.join(','), 0]]);
-  for (let i = 0; i < queue.length; i++) {
-    const [x, y] = queue[i];
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx, ny = y + dy, key = `${nx},${ny}`;
-      if (visited.has(key) || !canOccupy((nx + 0.5) * TILE_SIZE, (ny + 0.5) * TILE_SIZE)) continue;
-      visited.add(key);
-      distances.set(key, distances.get(`${x},${y}`) + 1);
-      queue.push([nx, ny]);
+for (const [index, level] of LEVELS.entries()) {
+  test(`level ${index + 1} (${level.id}): floor, door, coins, cover${level.artefact ? ', crystal' : ''} reachable`, t => {
+    setLevel(index);
+    try {
+      const tile = point => `${Math.floor(point.x / TILE_SIZE)},${Math.floor(point.y / TILE_SIZE)}`;
+      const start = tile(level.spawn).split(',').map(Number);
+      const queue = [start];
+      const distances = new Map([[start.join(','), 0]]);
+      for (let i = 0; i < queue.length; i++) {
+        const [x, y] = queue[i];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy, key = `${nx},${ny}`;
+          if (distances.has(key) || !canOccupy((nx + 0.5) * TILE_SIZE, (ny + 0.5) * TILE_SIZE)) continue;
+          distances.set(key, distances.get(`${x},${y}`) + 1);
+          queue.push([nx, ny]);
+        }
+      }
+      for (let y = 0; y < MAP_ROWS; y++) for (let x = 0; x < MAP_COLUMNS; x++) {
+        if (canOccupy((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)) assert.ok(distances.has(`${x},${y}`), `floor ${x},${y}`);
+      }
+      const door = { x: level.door.x + 16, y: level.door.y + 16 };
+      const points = [door, ...level.coins, ...level.hidingZones.map(z => ({ x: z.x + 16, y: z.y + 16 })),
+        ...(level.artefact ? [level.artefact] : [])];
+      for (const point of points) assert.ok(distances.has(tile(point)), `unreachable ${tile(point)}`);
+      for (const coin of level.coins) {
+        assert.equal(getHidingZone(coin.x, coin.y, 1), null, `coin ${tile(coin)} sits in cover`);
+      }
+      // Only the final level carries the crystal; its door needs it.
+      assert.equal(Boolean(level.artefact), index === LEVELS.length - 1);
+      const steps = distances.get(tile(door));
+      if (index === 0) assert.ok(steps >= 44 && steps <= 70, `Door route is ${steps} tiles`);
+      t.diagnostic(`Shortest four-direction route to the door: ${steps} tiles`);
+    } finally {
+      setLevel(0);
     }
-  }
-  for (let y = 0; y < MAP_ROWS; y++) for (let x = 0; x < MAP_COLUMNS; x++) {
-    if (canOccupy((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)) assert.ok(visited.has(`${x},${y}`));
-  }
-  for (const point of [ARTEFACT, { x: EXIT.x + 16, y: EXIT.y + 16 },
-    ...HIDING_ZONES.map(z => ({ x: z.x + 16, y: z.y + 16 }))]) {
-    assert.ok(visited.has(`${Math.floor(point.x / TILE_SIZE)},${Math.floor(point.y / TILE_SIZE)}`));
-  }
-  const steps = distances.get(`${Math.floor(ARTEFACT.x / TILE_SIZE)},${Math.floor(ARTEFACT.y / TILE_SIZE)}`);
-  // Preserve the intended moderate detour, while avoiding an excessively long maze.
-  assert.ok(steps >= 44 && steps <= 70, `Artefact route is ${steps} tiles`);
-  t.diagnostic(`Shortest four-direction artefact route: ${steps} tiles (${steps * TILE_SIZE} px)`);
-});
+  });
+}
 
 test('diagonal speed is normalized, opposite keys cancel, no input stops', () => {
   for (const keys of [[false, true, false, false], [false, true, true, false]]) {

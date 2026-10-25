@@ -14,8 +14,19 @@ const tile = (column, row, tileSize) => Object.freeze({
 export const GUARD_ROUTES = Object.freeze({
   // Central gallery loop around the (11,11) pillar; covers the west doorway.
   'guard-gallery': [[9, 2], [15, 2], [15, 14], [9, 14]],
-  // East wing in front of the artefact room's west opening at (17,3).
+  // East wing in front of the door room's west opening at (17,3).
   'guard-east': [[17, 4], [23, 4], [23, 15], [17, 15]],
+});
+
+// Routes per level (config.LEVELS ids). GUARD_ROUTES is level 1, 'gallery'.
+export const GUARD_ROUTES_BY_LEVEL = Object.freeze({
+  gallery: GUARD_ROUTES,
+  vault: Object.freeze({
+    // Central hall loop past both westward gaps (rows 6-7 and 13-15).
+    'guard-hall': [[9, 6], [15, 6], [15, 14], [9, 14]],
+    // East wing above the partition, between the start and the top corridor.
+    'guard-east': [[17, 2], [23, 2], [23, 6], [17, 6]],
+  }),
 });
 
 // Suspicion bar colour and the icon above the guard's head, per state.
@@ -95,7 +106,9 @@ export function guardSpriteTexture(scene, facing, stride) {
 }
 
 export default class GuardSystem {
-  constructor(scene, mapGeometry, { routes = GUARD_ROUTES, tuning = {} } = {}) {
+  constructor(scene, mapGeometry, {
+    routes = GUARD_ROUTES_BY_LEVEL[mapGeometry.levelId] ?? GUARD_ROUTES, tuning = {},
+  } = {}) {
     this.scene = scene;
     this.map = mapGeometry;
     this.tuning = { ...GUARD_TUNING, ...tuning };

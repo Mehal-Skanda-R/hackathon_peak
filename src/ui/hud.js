@@ -11,11 +11,13 @@ export function initHUD() {
     <div class="briefing-top"><span class="eyebrow">YOUR ASSIGNMENT</span><span class="number">01</span></div>
     <div class="crystal" aria-hidden="true">◇</div>
     <h2>The golden<br>heart of the museum.</h2>
-    <p id="objective">Find the crystal. Take it.<br>Get back to the exit.</p>
+    <p id="objective">Reach the exit door.<br>Grab coins on the way.</p>
     <button class="primary" id="start-btn">Enter the museum <span>↗</span></button>
     <button class="primary resume" id="resume-btn" style="display:none">Resume the heist <span>▸</span></button>
     <button class="secondary" id="ble-btn">Connect heart-rate sensor <span>❤</span></button>
     <dl class="readout">
+      <dt>LEVEL</dt><dd id="hud-level">--</dd>
+      <dt>COINS</dt><dd id="hud-coins">--</dd>
       <dt>HEART RATE</dt><dd><span class="bpm-big" id="hud-bpm">--</span><small class="bpm-unit"> BPM</small></dd>
       <dt>ABOVE BASELINE</dt><dd id="hud-delta">--</dd>
       <dt>SENSOR</dt><dd id="hud-sensor">--</dd>
@@ -26,10 +28,11 @@ export function initHUD() {
     <h3>KNOW YOUR SURROUNDINGS</h3>
     <ul class="legend">
       <li><span class="legend-icon thief">◈</span><div><b>The thief</b><small>Your cyan-cloaked character</small></div></li>
-      <li><span class="legend-icon gold">◇</span><div><b>The prize</b><small>Touch the golden crystal</small></div></li>
+      <li><span class="legend-icon gold">●</span><div><b>Coins</b><small>Optional loot on paths and in corners</small></div></li>
+      <li><span class="legend-icon gold">◇</span><div><b>The crystal</b><small>Final level only, in the vault</small></div></li>
       <li><span class="legend-icon guard">◉</span><div><b>The guards</b><small>Yellow coats. <b style="display:inline;color:#ffa133">?</b> suspicious, <b style="display:inline;color:#ff5d6c">!</b> chasing</small></div></li>
       <li><span class="legend-icon cover">❧</span><div><b>Cover</b><small>Hide inside the leafy green rugs</small></div></li>
-      <li><span class="legend-icon exit">↙</span><div><b>Your way out</b><small>Return with the crystal to escape</small></div></li>
+      <li><span class="legend-icon exit">⇥</span><div><b>The exit door</b><small>Walk in to reach the next level. No way back.</small></div></li>
     </ul>
     <div class="dev-panel" id="dev-panel">
       <h3>DEVELOPER SIMULATOR · TEST</h3>
@@ -103,7 +106,8 @@ export function initHUD() {
     // Heading status
     const statusText = {
       ready: usable ? 'Ready · press Enter the museum' : 'Waiting for heart-rate input',
-      playing: state.hasArtefact ? 'Crystal taken · get to the exit' : 'Heist in progress',
+      playing: state.hasArtefact ? 'Crystal taken · get to the exit door' : 'Heist in progress',
+      transition: 'Through the door…',
       paused: `Paused · ${state.pauseReason ?? 'input unavailable'}`,
       caught: 'Caught by a guard',
       victory: 'Escaped with the crystal',
@@ -113,9 +117,15 @@ export function initHUD() {
     dot.classList.toggle('warn', state.status === 'paused' || (state.status === 'ready' && !usable));
     dot.classList.toggle('bad', state.status === 'caught');
 
-    $('objective').innerHTML = state.hasArtefact
-      ? 'The crystal is yours.<br>Return to the marked exit.'
-      : 'Find the crystal. Take it.<br>Get back to the exit.';
+    $('objective').innerHTML = !state.needsArtefact
+      ? 'Reach the exit door.<br>Grab coins on the way. No way back.'
+      : state.hasArtefact
+        ? 'The crystal is yours.<br>Get to the exit door.'
+        : 'Find the crystal in the vault.<br>Then escape through the exit door.';
+    const levelLabel = state.level ? `${state.level} / ${state.levelCount} · ${state.levelName}` : '--';
+    $('hud-level').textContent = levelLabel;
+    $('hud-coins').textContent = state.level
+      ? `${state.coins} total (${state.levelCoins}/${state.levelCoinTotal} here)` : '--';
 
     // Readout
     $('hud-bpm').textContent = sensor.smoothedBpm ?? sensor.bpm ?? '--';
@@ -157,9 +167,11 @@ export function initHUD() {
       : `Calibrating your resting heart rate (~${live ? 20 : 3}s)…`;
     const screen = {
       ready: {
-        eyebrow: 'OPERATION 001 · THE MUSEUM JOB',
+        eyebrow: state.level ? `LEVEL ${state.level} OF ${state.levelCount} · ${state.levelName.toUpperCase()}` : 'THE MUSEUM JOB',
         title: usable ? 'Ready when you are.' : 'Waiting for heart-rate input.',
-        subtitle: sensorHint ?? 'Find the crystal, take it, and get back to the exit.',
+        subtitle: sensorHint ?? (state.needsArtefact
+          ? 'Take the crystal from the vault, then escape through the exit door.'
+          : 'Reach the exit door. Coins are a bonus. There is no way back.'),
         button: 'banner-start-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
       },
       paused: {
@@ -171,12 +183,12 @@ export function initHUD() {
       },
       caught: {
         eyebrow: 'OPERATION FAILED', title: 'Caught.',
-        subtitle: 'A guard got you. The crystal stays in the museum.',
+        subtitle: `A guard got you on level ${state.level ?? 1}. Try this level again.`,
         button: 'restart-btn', hint: 'OR PRESS R', tone: 'caught',
       },
       victory: {
         eyebrow: 'OPERATION COMPLETE', title: 'You escaped.',
-        subtitle: 'The golden heart of the museum is yours.',
+        subtitle: `The golden heart of the museum is yours, with ${state.coins ?? 0} coins. Play again starts from level 1.`,
         button: 'restart-btn', hint: 'OR PRESS R', tone: 'victory',
       },
     }[state.status];

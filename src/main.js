@@ -12,7 +12,6 @@ class IntegrationScene extends Phaser.Scene {
     constructor() { super('IntegrationScene'); }
     create() {
         const museum = this.scene.get('MuseumScene');
-        const mapGeometry = museum.getMapGeometry();
         
         let pulseSystem, visibilitySystem, guardSystem, pulseEffects;
 
@@ -22,6 +21,8 @@ class IntegrationScene extends Phaser.Scene {
             if (pulseEffects && typeof pulseEffects.destroy === 'function') pulseEffects.destroy();
             if (pulseSystem && typeof pulseSystem.destroy === 'function') pulseSystem.destroy();
             
+            // Each level has its own geometry; fetch it on every (re)build.
+            const mapGeometry = museum.getMapGeometry();
             pulseSystem = new PulseSystem(museum);
             visibilitySystem = new VisibilitySystem(museum, mapGeometry);
             guardSystem = new GuardSystem(museum, mapGeometry);
@@ -43,6 +44,15 @@ class IntegrationScene extends Phaser.Scene {
             if (lastStatus === 'ready' && engineState.status === 'playing') visibilitySystem?.revealAll(1000, 500);
             lastStatus = engineState.status;
             updateGameState(engineState);
+        });
+
+        // Door: light the whole room for the animation, then auto-start the
+        // next level once it is built (no way back, no extra Start click).
+        museum.events.on('engine:door', () => visibilitySystem?.revealAll(3000, 400));
+        museum.events.on('engine:level-complete', () => {
+            museum.events.once('engine:ready', () => {
+                if (isSensorUsable(getGameState().sensor)) museum.startRun();
+            });
         });
 
         museum.events.on('guards:caught', () => {
@@ -97,7 +107,9 @@ class IntegrationScene extends Phaser.Scene {
             museum.events.once('engine:ready', () => {
                 if (isSensorUsable(getGameState().sensor)) museum.startRun();
             });
-            museum.restartRun();
+            // Caught: retry this level. Final victory: start again from level 1.
+            if (status === 'victory') museum.restartGame();
+            else museum.restartRun();
         });
 
         window.addEventListener('hud-test-mode-clicked', () => setSensorMode('test'));

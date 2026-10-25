@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
 import Player from './Player.js';
-import { createMuseumArt } from './MuseumArt.js';
-import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, WALLS,
-  ARTEFACT, EXIT, MAP_GEOMETRY, canOccupy, hasLineOfSight } from './config.js';
+import { createMuseumArt, coinTexture } from './MuseumArt.js';
+import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, WALLS, LEVELS, LEVEL, COINS,
+  ARTEFACT, EXIT, MAP_GEOMETRY, setLevel, canOccupy, hasLineOfSight } from './config.js';
+
+const COIN_PICKUP_DISTANCE = 18;
 
 export const ENGINE_EVENTS = Object.freeze({
   READY: 'engine:ready', STATE: 'engine:state', PICKUP: 'engine:artefact-collected',
   VICTORY: 'engine:victory', CAUGHT: 'engine:caught',
+  COIN: 'engine:coin', DOOR: 'engine:door', LEVEL_COMPLETE: 'engine:level-complete',
 });
 
 export default class MuseumScene extends Phaser.Scene {
@@ -14,7 +17,12 @@ export default class MuseumScene extends Phaser.Scene {
     super(SCENE_KEY);
   }
 
-  create() {
+  // data.level / data.coinsBefore carry progress across scene restarts.
+  create(data = {}) {
+    this.levelIndex = data.level ?? 0;
+    this.coinsBefore = data.coinsBefore ?? 0;
+    this.coinsCollected = 0;
+    setLevel(this.levelIndex);
     this.status = 'ready';
     this.pauseReason = null;
     this.hasArtefact = false;
@@ -27,6 +35,9 @@ export default class MuseumScene extends Phaser.Scene {
     this.worldArt = art.background;
     this.artefactVisual = art.artefact;
     this.exitVisual = art.exit;
+    this.exitLeaf = art.exitLeaf;
+    // The final level's door stays shut until the crystal is carried.
+    if (ARTEFACT) this.exitLeaf.setTint(0x8a7a6a);
     this.exit = this.add.rectangle(EXIT.x + EXIT.width / 2, EXIT.y + EXIT.height / 2,
       EXIT.width, EXIT.height).setVisible(false);
     this.physics.add.existing(this.exit, true);
@@ -37,12 +48,16 @@ export default class MuseumScene extends Phaser.Scene {
         wall.width, wall.height).setVisible(false);
       this.walls.add(object);
     }
-    this.artefact = this.add.rectangle(ARTEFACT.x, ARTEFACT.y, ARTEFACT.size, ARTEFACT.size)
-      .setVisible(false);
-    this.physics.add.existing(this.artefact, true);
+    this.coins = COINS.map(coin => this.add.image(coin.x, coin.y, coinTexture(this)).setDepth(3));
+    this.tweens.add({ targets: this.coins, y: '-=2', duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.player = new Player(this);
     this.physics.add.collider(this.player, this.walls);
-    this.physics.add.overlap(this.player, this.artefact, this.collectArtefact, undefined, this);
+    if (ARTEFACT) {
+      this.artefact = this.add.rectangle(ARTEFACT.x, ARTEFACT.y, ARTEFACT.size, ARTEFACT.size)
+        .setVisible(false);
+      this.physics.add.existing(this.artefact, true);
+      this.physics.add.overlap(this.player, this.artefact, this.collectArtefact, undefined, this);
+    }
     this.physics.add.overlap(this.player, this.exit, this.tryExit, undefined, this);
 
     this.restartKey = this.input.keyboard.addKey('R');
@@ -58,6 +73,7 @@ export default class MuseumScene extends Phaser.Scene {
       }
     });
     this.physics.world.pause();
+    if (data.fromDoor) this.cameras.main.fadeIn(450, 0, 0, 0);
     this.publishState(true);
     this.events.emit(ENGINE_EVENTS.READY, this.getState());
   }
@@ -65,7 +81,11 @@ export default class MuseumScene extends Phaser.Scene {
   // Engine subset only. Mehal aggregates it into the shared GameState.
   getState() {
     return Object.freeze({ status: this.status, hasArtefact: this.hasArtefact,
-      pauseReason: this.pauseReason, player: this.getPlayerState() });
+      pauseReason: this.pauseReason, player: this.getPlayerState(),
+      level: this.levelIndex + 1, levelCount: LEVELS.length, levelName: LEVEL.name,
+      needsArtefact: Boolean(ARTEFACT),
+      coins: this.coinsBefore + this.coinsCollected,
+      levelCoins: this.coinsCollected, levelCoinTotal: COINS.length });
   }
 
   getPlayerState() { return this.player.getState(); }
@@ -78,21 +98,79 @@ export default class MuseumScene extends Phaser.Scene {
     this.hasArtefact = true;
     this.artefact.body.enable = false;
     this.artefactVisual.setVisible(false);
+    this.exitLeaf.clearTint();
     this.exitVisual.setTint(0x8bffd0);
     this.events.emit(ENGINE_EVENTS.PICKUP, this.getState());
     this.publishState(true);
     return true;
   }
 
+  // Entering the door ends the level: on to the next one (no way back), or
+  // victory on the final level, which also requires the crystal.
   tryExit() {
-    if (!this.hasArtefact) return false;
-    return this.finish('victory');
+    if (this.status !== 'playing' || this.restartPending) return false;
+    if (ARTEFACT && !this.hasArtefact) return false;
+    return this.enterDoor();
+  }
+
+  enterDoor() {
+    this.status = 'transition';
+    this.pauseReason = null;
+    this.player.update(false);
+    this.physics.world.pause();
+    this.events.emit(ENGINE_EVENTS.DOOR, this.getState());
+    this.publishState(true);
+    const door = { x: EXIT.x + EXIT.width / 2, y: EXIT.y + EXIT.height / 2 };
+    const finalLevel = this.levelIndex >= LEVELS.length - 1;
+    // Door swings open, the thief walks in and disappears, the view fades out.
+    this.tweens.add({ targets: this.exitLeaf, scaleX: 0.08, duration: 350, ease: 'Sine.easeInOut' });
+    this.tweens.add({
+      targets: this.player, x: door.x, y: door.y, duration: 450, delay: 150, ease: 'Sine.easeInOut',
+      onComplete: () => this.tweens.add({
+        targets: this.player, scale: 0.3, alpha: 0, duration: 400, ease: 'Quad.easeIn',
+        onComplete: () => {
+          this.tweens.add({ targets: this.exitLeaf, scaleX: 1, duration: 250 });
+          this.cameras.main.fadeOut(400, 0, 0, 0);
+          this.cameras.main.once('camerafadeoutcomplete', () => {
+            if (finalLevel) {
+              this.cameras.main.fadeIn(300, 0, 0, 0);
+              this.finish('victory');
+            } else {
+              this.goToLevel(this.levelIndex + 1);
+            }
+          });
+        },
+      }),
+    });
+    return true;
+  }
+
+  goToLevel(index) {
+    if (this.restartPending) return;
+    this.restartPending = true;
+    this.events.emit(ENGINE_EVENTS.LEVEL_COMPLETE, this.getState());
+    this.scene.restart({ level: index, coinsBefore: this.coinsBefore + this.coinsCollected, fromDoor: true });
+  }
+
+  collectCoins() {
+    const me = this.getPlayerState();
+    for (const coin of this.coins) {
+      if (!coin.active || coin.collected) continue;
+      if (Math.hypot(coin.x - me.x, coin.y - me.y) > COIN_PICKUP_DISTANCE) continue;
+      coin.collected = true;
+      this.coinsCollected++;
+      this.tweens.add({ targets: coin, scale: 1.8, alpha: 0, y: coin.y - 10, duration: 260, onComplete: () => coin.destroy() });
+      this.events.emit(ENGINE_EVENTS.COIN, this.getState());
+      this.publishState(true);
+    }
   }
 
   catchPlayer() { return this.finish('caught'); }
 
   finish(status) {
-    if (this.status !== 'playing' || this.restartPending || !['victory', 'caught'].includes(status)) return false;
+    // Victory is reached from the final door's transition; capture only while playing.
+    const allowed = status === 'victory' ? ['playing', 'transition'] : ['playing'];
+    if (!allowed.includes(this.status) || this.restartPending || !['victory', 'caught'].includes(status)) return false;
     this.status = status;
     this.pauseReason = null;
     this.player.update(false);
@@ -131,11 +209,22 @@ export default class MuseumScene extends Phaser.Scene {
 
   restartRun() {
     if (this.restartPending) return;
+    if (this.status === 'victory') return this.restartGame(); // game finished: from level 1
     // Phaser queues a restart until the next scene step. Freeze this run now.
     this.restartPending = true;
     this.player.update(false);
     this.physics.world.pause();
-    this.scene.restart();
+    // Retry the current level, keeping coins banked from earlier levels.
+    this.scene.restart({ level: this.levelIndex, coinsBefore: this.coinsBefore });
+  }
+
+  // After the final victory: start the whole game again from level 1.
+  restartGame() {
+    if (this.restartPending) return;
+    this.restartPending = true;
+    this.player.update(false);
+    this.physics.world.pause();
+    this.scene.restart({ level: 0, coinsBefore: 0 });
   }
 
   publishState(force = false) {
@@ -149,6 +238,8 @@ export default class MuseumScene extends Phaser.Scene {
 
   update() {
     if (this.restartPending) return;
+    if (this.status === 'transition') return; // door animation owns the player
     this.player.update(this.status === 'playing');
+    if (this.status === 'playing') this.collectCoins();
   }
 }
