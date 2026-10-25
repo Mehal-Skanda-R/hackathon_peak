@@ -5,6 +5,7 @@ import PulseSystem from './game/PulseSystem.js';
 import PulseEffects from './game/PulseEffects.js';
 import VisibilitySystem from './game/VisibilitySystem.js';
 import { initHUD } from './ui/hud.js';
+import { subscribeToHeartRate, setSensorMode, connectHeartRate } from './sensor/heartRate.js';
 
 class IntegrationScene extends Phaser.Scene {
     constructor() { super('IntegrationScene'); }
@@ -14,7 +15,6 @@ class IntegrationScene extends Phaser.Scene {
         
         const pulseSystem = new PulseSystem(museum);
         const visibilitySystem = new VisibilitySystem(museum, mapGeometry);
-        // PulseEffects sits on top of the darkness
         const pulseEffects = new PulseEffects(museum);
         pulseEffects.graphics.setDepth(51);
 
@@ -33,17 +33,24 @@ class IntegrationScene extends Phaser.Scene {
             if (getGameState().status === 'ready') museum.startRun();
         });
 
+        window.addEventListener('hud-ble-clicked', async () => {
+            try {
+                setSensorMode('live');
+                if (typeof connectHeartRate === 'function') {
+                    await connectHeartRate();
+                }
+            } catch (err) {
+                console.error('BLE Connection failed:', err);
+            }
+        });
+
         this.input.keyboard.on('keydown-SPACE', () => {
             if (getGameState().status === 'ready') museum.startRun();
         });
 
-        this.time.addEvent({
-            delay: 3000, loop: true,
-            callback: () => {
-                const s = getGameState().sensor;
-                const newBpm = s.bpm === 75 ? 120 : 75;
-                updateGameState({ sensor: { ...s, bpm: newBpm, pulseDelta: newBpm === 75 ? 0 : 20 }});
-            }
+        // Wire Shubranshu's real sensor data directly into your GameState
+        subscribeToHeartRate((sensorState) => {
+            updateGameState({ sensor: sensorState });
         });
     }
 }
@@ -57,7 +64,6 @@ const config = {
 };
 
 initHUD();
-updateGameState({ sensor: { mode: 'test', bpm: 75, pulseDelta: 0, connected: false } });
 
 const game = new Phaser.Game(config);
 game.events.once('ready', () => {
