@@ -38,10 +38,10 @@ class IntegrationScene extends Phaser.Scene {
             initSystems();
         });
 
-        // Show the whole museum for a second whenever a round starts.
+        // Show the whole museum for two seconds whenever a round starts.
         let lastStatus = museum.status;
         museum.events.on('engine:state', (engineState) => {
-            if (lastStatus === 'ready' && engineState.status === 'playing') visibilitySystem?.revealAll(1000, 500);
+            if (lastStatus === 'ready' && engineState.status === 'playing') visibilitySystem?.revealAll(2000, 500);
             lastStatus = engineState.status;
             updateGameState(engineState);
         });
@@ -72,14 +72,19 @@ class IntegrationScene extends Phaser.Scene {
                 museum.setPaused(true, 'Sensor input lost or stale');
             }
 
-            if (pulseSystem) {
+            // While the start-of-level map is shown, everything waits: the thief
+            // cannot move and no pulses fire or guards act.
+            const previewing = Boolean(visibilitySystem?.isHolding());
+            museum.setInputLocked(previewing);
+
+            if (pulseSystem && !previewing) {
                 const sensorData = { ...state.sensor, bpm: state.sensor.smoothedBpm || state.sensor.bpm };
                 pulseSystem.update(delta, sensorData, state);
             }
             if (pulseEffects) pulseEffects.update(delta);
             if (visibilitySystem) visibilitySystem.update(delta);
             
-            if (state.status === 'playing' && guardSystem) {
+            if (state.status === 'playing' && guardSystem && !previewing) {
                 guardSystem.update(delta, state.player);
             }
             if (guardSystem) {

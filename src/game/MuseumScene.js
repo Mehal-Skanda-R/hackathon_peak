@@ -22,6 +22,7 @@ export default class MuseumScene extends Phaser.Scene {
     this.levelIndex = data.level ?? 0;
     this.coinsBefore = data.coinsBefore ?? 0;
     this.coinsCollected = 0;
+    this.inputLocked = false;
     setLevel(this.levelIndex);
     this.status = 'ready';
     this.pauseReason = null;
@@ -89,6 +90,8 @@ export default class MuseumScene extends Phaser.Scene {
   }
 
   getPlayerState() { return this.player.getState(); }
+  // Integration can hold the thief still (e.g. during the start-of-level map preview).
+  setInputLocked(locked) { this.inputLocked = Boolean(locked); }
   getMapGeometry() { return MAP_GEOMETRY; }
   canOccupy(x, y, width, height) { return canOccupy(x, y, width, height); }
   hasLineOfSight(from, to) { return hasLineOfSight(from, to); }
@@ -239,7 +242,7 @@ export default class MuseumScene extends Phaser.Scene {
   update() {
     if (this.restartPending) return;
     if (this.status === 'transition') return; // door animation owns the player
-    this.player.update(this.status === 'playing');
+    this.player.update(this.status === 'playing' && !this.inputLocked);
     if (this.status === 'playing') this.collectCoins();
   }
 }

@@ -67,6 +67,11 @@ export default class VisibilitySystem {
     this.overlay.setAlpha(0);
   }
 
+  // True while the full map is held fully visible (before the fade starts).
+  isHolding() {
+    return Boolean(this.preview && this.preview.elapsed < this.preview.holdMs);
+  }
+
   handlePulse(pulse) {
     this.activePulses.push({ ...pulse, progress: 0 });
   }
