@@ -38,22 +38,22 @@ test('BLE parsing: uint8, little-endian uint16, malformed', () => {
   assert.equal(HR.parseHeartRateMeasurement(null), null);
 });
 
-test('SignalProcessor: EMA seed/alpha, range rejection, 45 s calibration, 5 s stale', () => {
+test('SignalProcessor: EMA seed/alpha, range rejection, 20 s LIVE calibration, 5 s stale', () => {
   const sp = new SignalProcessor();
   assert.equal(sp.processSample(70, 0).smoothedBpm, 70);
   assert.equal(sp.processSample(80, 1000).smoothedBpm, 72);       // 0.2*80 + 0.8*70
   for (const bad of [NaN, '90', 0, 29, 221, undefined]) {
     assert.equal(sp.processSample(bad, 2000).smoothedBpm, 72);
   }
-  assert.equal(sp.processSample(72, 44000).calibrated, false);
-  const m = sp.processSample(72, 45000);
+  assert.equal(sp.processSample(72, 19000).calibrated, false);
+  const m = sp.processSample(72, 20000);
   assert.equal(m.calibrated, true);
   assert.ok(m.baselineBpm >= 70 && m.baselineBpm <= 72);
-  assert.equal(sp.isStale(49999), false);
-  assert.equal(sp.isStale(50000), true);
+  assert.equal(sp.isStale(24999), false);
+  assert.equal(sp.isStale(25000), true);
 });
 
-test('TEST mode starts on load without any call and calibrates in ~3 s, not 45 s', () => {
+test('TEST mode starts on load without any call and calibrates in ~3 s, not 20 s', () => {
   assert.equal(state().mode, 'test');
   advance(2000);
   assert.ok(state().bpm !== null, 'readings flowing');
@@ -85,8 +85,8 @@ test('LIVE: fake BLE device connects, calibrates, rejects malformed packets', as
   await HR.connectHeartRate();
   assert.equal(state().connected, true);
   const notify = handlers.characteristicvaluechanged;
-  for (let i = 0; i < 44; i++) { notify(packet([0x00, 70])); advance(1000); }
-  assert.equal(state().calibrated, false, 'LIVE keeps the 45 s baseline window');
+  for (let i = 0; i < 19; i++) { notify(packet([0x00, 70])); advance(1000); }
+  assert.equal(state().calibrated, false, 'LIVE keeps the 20 s baseline window');
   for (let i = 0; i < 3; i++) { notify(packet([0x00, 70])); advance(1000); }
   assert.equal(state().calibrated, true);
   assert.equal(state().stale, false);
@@ -106,8 +106,8 @@ test('LIVE signal loss: stale after 5 s resets calibration; recalibrates on fres
   const notify = handlers.characteristicvaluechanged;
   notify(packet([0x00, 75])); advance(1000);
   assert.equal(state().stale, false);
-  assert.equal(state().calibrated, false, 'needs a fresh 45 s window');
-  for (let i = 0; i < 46; i++) { notify(packet([0x00, 75])); advance(1000); }
+  assert.equal(state().calibrated, false, 'needs a fresh 20 s window');
+  for (let i = 0; i < 21; i++) { notify(packet([0x00, 75])); advance(1000); }
   assert.equal(state().calibrated, true);
 });
 

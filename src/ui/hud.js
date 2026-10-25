@@ -48,7 +48,7 @@ export function initHUD() {
     const usable = isSensorUsable(sensor);
     sensorEl.innerText = `SENSOR: ${usable ? 'READY'
       : sensor.stale ? (sensor.mode === 'live' && !sensor.connected ? 'NOT CONNECTED' : 'NO SIGNAL')
-      : `CALIBRATING (~${sensor.mode === 'test' ? 3 : 45}s)`}`;
+      : `CALIBRATING (~${sensor.mode === 'test' ? 3 : 20}s)`}`;
     statusEl.innerText = `STATUS: ${state.status.toUpperCase()}`
       + (state.status === 'paused' && state.pauseReason ? ` (${state.pauseReason})` : '');
     

@@ -1,5 +1,5 @@
 const EMA_ALPHA = 0.2;
-export const LIVE_CALIBRATION_MS = 45000; // real wearer baseline
+export const LIVE_CALIBRATION_MS = 20000; // real wearer resting baseline
 export const TEST_CALIBRATION_MS = 3000;  // simulated input: a few readings suffice
 const STALE_THRESHOLD_MS = 5000;        // 5 seconds
 
