@@ -803,3 +803,6 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: round-start map preview. Each ready -> playing transition shows the
   whole museum for 1 s, then fades to dark over 0.5 s (`VisibilitySystem.revealAll`, `b2ad925`).
   Visual only (no guard exposure); Resume does not trigger it; never a permanent reveal.
+- 25 Oct 2026 — Shyam: pulse reveal is now a soft radial gradient (Among Us-style vision):
+  darkness RenderTexture with a gradient brush erased per pulse; reveal fades out at the end;
+  the white outline ring became a faint soft glow band. Radius/timing/exposure unchanged.
