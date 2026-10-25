@@ -836,3 +836,9 @@ context commit verified on main (or publication pending/failed).
 - **Soham:** `tests/engine/browser/engine.spec.js`, the engine fixture and
   `tests/engine/combined-heist.cjs` still assume a level-1 crystal (`ARTEFACT`) and need updating
   to the door objective. Map art for future levels goes in `LEVELS[i].decor`.
+- 25 Oct 2026 — Shyam: **7 levels** (`1774fa4`), from the team concept sheet: 1 The Gallery,
+  2 The West Wing, 3 The Gallery Hall (dinosaur skeleton), 4 The Archive (maze), 5 The Vault
+  Ring, 6 The Royal Exhibit (pool + bridge; exit bottom-left), 7 The Final Heist (crystal at the
+  exit door, 4 guards). Replaces the interim "Vault" level 2. Levels 2-7 are text grids in
+  `config.js` (legend in `asciiLevel`); concept-sheet gem cases became coin clusters. Each level
+  has 2-4 guards (`GUARD_ROUTES_BY_LEVEL`); routes to the door are 40-48 tiles (final 34).
