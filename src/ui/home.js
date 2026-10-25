@@ -48,7 +48,7 @@ export function initHome() {
             <li><b>Move</b> W A S D or arrow keys.</li>
             <li><b>Your heartbeat</b> sends out pulses that light up the dark museum and alert nearby guards. A faster heart rate means bigger pulses.</li>
             <li><b>Hide</b> in the green rugs. Stay hidden for 3 s and guards give up.</li>
-            <li><b>Coins</b> are optional loot. The <b>exit door</b> takes you up a floor. There is no way back.</li>
+            <li><b>Coins</b>: each floor's <b>exit door</b> opens only after you collect enough of them (shown at the top of the game). The door takes you up a floor. There is no way back.</li>
             <li><b>Floor 07</b>: take the crystal by the door, then escape.</li>
           </ul>
           <button class="primary" id="home-modal-close">Got it <span>✓</span></button>

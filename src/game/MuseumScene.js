@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import Player from './Player.js';
 import { createMuseumArt, coinTexture } from './MuseumArt.js';
-import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, WALLS, LEVELS, LEVEL, COINS,
+import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, WALLS, LEVELS, LEVEL, COINS, COINS_REQUIRED,
   ARTEFACT, EXIT, MAP_GEOMETRY, setLevel, canOccupy, hasLineOfSight } from './config.js';
 
 const COIN_PICKUP_DISTANCE = 18;
@@ -10,6 +10,7 @@ export const ENGINE_EVENTS = Object.freeze({
   READY: 'engine:ready', STATE: 'engine:state', PICKUP: 'engine:artefact-collected',
   VICTORY: 'engine:victory', CAUGHT: 'engine:caught',
   COIN: 'engine:coin', DOOR: 'engine:door', LEVEL_COMPLETE: 'engine:level-complete',
+  DOOR_LOCKED: 'engine:door-locked',
 });
 
 export default class MuseumScene extends Phaser.Scene {
@@ -37,8 +38,10 @@ export default class MuseumScene extends Phaser.Scene {
     this.artefactVisual = art.artefact;
     this.exitVisual = art.exit;
     this.exitLeaf = art.exitLeaf;
-    // The final level's door stays shut until the crystal is carried.
-    if (ARTEFACT) this.exitLeaf.setTint(0x8a7a6a);
+    // The door stays shut (dimmed) until enough coins, and on the final level
+    // the crystal, are carried.
+    this.lastLockNotice = -Infinity;
+    this.updateDoorLook();
     this.exit = this.add.rectangle(EXIT.x + EXIT.width / 2, EXIT.y + EXIT.height / 2,
       EXIT.width, EXIT.height).setVisible(false);
     this.physics.add.existing(this.exit, true);
@@ -86,7 +89,8 @@ export default class MuseumScene extends Phaser.Scene {
       level: this.levelIndex + 1, levelCount: LEVELS.length, levelName: LEVEL.name,
       needsArtefact: Boolean(ARTEFACT),
       coins: this.coinsBefore + this.coinsCollected,
-      levelCoins: this.coinsCollected, levelCoinTotal: COINS.length });
+      levelCoins: this.coinsCollected, levelCoinTotal: COINS.length,
+      coinsRequired: COINS_REQUIRED, doorOpen: this.doorOpen() });
   }
 
   getPlayerState() { return this.player.getState(); }
@@ -101,8 +105,7 @@ export default class MuseumScene extends Phaser.Scene {
     this.hasArtefact = true;
     this.artefact.body.enable = false;
     this.artefactVisual.setVisible(false);
-    this.exitLeaf.clearTint();
-    this.exitVisual.setTint(0x8bffd0);
+    this.updateDoorLook();
     this.events.emit(ENGINE_EVENTS.PICKUP, this.getState());
     this.publishState(true);
     return true;
@@ -110,9 +113,25 @@ export default class MuseumScene extends Phaser.Scene {
 
   // Entering the door ends the level: on to the next one (no way back), or
   // victory on the final level, which also requires the crystal.
+  doorOpen() {
+    return this.coinsCollected >= COINS_REQUIRED && (!ARTEFACT || this.hasArtefact);
+  }
+
+  updateDoorLook() {
+    if (this.doorOpen()) { this.exitLeaf.clearTint(); this.exitVisual.setTint(0x8bffd0); }
+    else { this.exitLeaf.setTint(0x6f655c); this.exitVisual.clearTint(); }
+  }
+
   tryExit() {
     if (this.status !== 'playing' || this.restartPending) return false;
-    if (ARTEFACT && !this.hasArtefact) return false;
+    if (!this.doorOpen()) {
+      // Overlap fires every frame; tell the HUD at most once a second.
+      if (this.time.now - this.lastLockNotice > 1000) {
+        this.lastLockNotice = this.time.now;
+        this.events.emit(ENGINE_EVENTS.DOOR_LOCKED, this.getState());
+      }
+      return false;
+    }
     return this.enterDoor();
   }
 
@@ -162,6 +181,7 @@ export default class MuseumScene extends Phaser.Scene {
       if (Math.hypot(coin.x - me.x, coin.y - me.y) > COIN_PICKUP_DISTANCE) continue;
       coin.collected = true;
       this.coinsCollected++;
+      if (this.coinsCollected === COINS_REQUIRED) this.updateDoorLook();
       this.tweens.add({ targets: coin, scale: 1.8, alpha: 0, y: coin.y - 10, duration: 260, onComplete: () => coin.destroy() });
       this.events.emit(ENGINE_EVENTS.COIN, this.getState());
       this.publishState(true);

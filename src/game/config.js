@@ -53,7 +53,7 @@ function mergeCells(rows, chars, skip = new Set()) {
   return done.map(r => tileRect(r.column, r.row, r.columns, r.rows));
 }
 
-function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
+function asciiLevel({ id, name, rows, spawn, entrance, door, artefact, coinsRequired }) {
   if (rows.length !== MAP_ROWS || rows.some(line => line.length !== MAP_COLUMNS)) {
     throw new Error(`Level ${id} must be ${MAP_COLUMNS} x ${MAP_ROWS}`);
   }
@@ -86,6 +86,8 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
     door: tileRect(...door),
     artefact: artefact ? Object.freeze({ ...center(...artefact), size: 20 }) : null,
     coins: coins(coinTiles),
+    // Coins needed before the exit door opens (default: half, rounded up).
+    coinsRequired: coinsRequired ?? Math.ceil(coinTiles.length / 2),
     decor: Object.freeze({
       rugs: mergeCells(rows, new Set(['r'])).map(r => [r.x + 3, r.y + 3, r.width - 6, r.height - 6]),
       banners, lamps, statues, exhibits, pools,
@@ -123,6 +125,7 @@ export const LEVELS = Object.freeze([
     artefact: null,
     coins: coins([[1, 1], [7, 1], [4, 8], [1, 15], [9, 5], [15, 1], [9, 15], [15, 15],
       [16, 10], [23, 15], [23, 7], [19, 4], [19, 1]]),
+    coinsRequired: 7,
     decor: Object.freeze({
       rugs: [[102, 301, 73, 92], [446, 118, 46, 94]],
       banners: [[264, 52], [520, 157], [350, 233]],
@@ -280,6 +283,7 @@ export let ARTEFACT = LEVEL.artefact;   // null except in the final level
 export let EXIT = LEVEL.door;           // the level's door: entering it ends the level
 export let ENTRANCE = LEVEL.entrance;
 export let COINS = LEVEL.coins;
+export let COINS_REQUIRED = LEVEL.coinsRequired; // coins needed to open the door
 export let MAP_GEOMETRY;
 
 export function setLevel(index) {
@@ -293,12 +297,13 @@ export function setLevel(index) {
   EXIT = LEVEL.door;
   ENTRANCE = LEVEL.entrance;
   COINS = LEVEL.coins;
+  COINS_REQUIRED = LEVEL.coinsRequired;
   MAP_GEOMETRY = Object.freeze({
     width: WORLD_WIDTH, height: WORLD_HEIGHT, tileSize: TILE_SIZE,
     columns: MAP_COLUMNS, rows: MAP_ROWS,
     levelId: LEVEL.id, levelIndex: index, levelName: LEVEL.name, levelCount: LEVELS.length,
     walls: WALLS, hidingZones: HIDING_ZONES, spawn: SPAWN,
-    artefact: ARTEFACT, exit: EXIT, entrance: ENTRANCE, coins: COINS,
+    artefact: ARTEFACT, exit: EXIT, entrance: ENTRANCE, coins: COINS, coinsRequired: COINS_REQUIRED,
   });
   return LEVEL;
 }

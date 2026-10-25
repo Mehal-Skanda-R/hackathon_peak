@@ -28,7 +28,7 @@ export function initHUD() {
     <h3>KNOW YOUR SURROUNDINGS</h3>
     <ul class="legend">
       <li><span class="legend-icon thief">◈</span><div><b>The thief</b><small>Your cyan-cloaked character</small></div></li>
-      <li><span class="legend-icon gold">●</span><div><b>Coins</b><small>Optional loot on paths and in corners</small></div></li>
+      <li><span class="legend-icon gold">●</span><div><b>Coins</b><small>Collect enough to open the exit door</small></div></li>
       <li><span class="legend-icon gold">◇</span><div><b>The crystal</b><small>Final level only, in the vault</small></div></li>
       <li><span class="legend-icon guard">◉</span><div><b>The guards</b><small>Yellow coats. <b style="display:inline;color:#ffa133">?</b> suspicious, <b style="display:inline;color:#ff5d6c">!</b> chasing</small></div></li>
       <li><span class="legend-icon cover">❧</span><div><b>Cover</b><small>Hide inside the leafy green rugs</small></div></li>
@@ -59,6 +59,28 @@ export function initHUD() {
     <div class="hint" id="round-hint"></div>
   `;
   game.appendChild(banner);
+
+  // Coin goal chip over the canvas (also visible in full screen) and a short
+  // notice when the player walks into a door that is still locked.
+  const coinChip = document.createElement('div');
+  coinChip.id = 'coin-chip';
+  coinChip.setAttribute('aria-live', 'polite');
+  game.appendChild(coinChip);
+  const doorNotice = document.createElement('div');
+  doorNotice.id = 'door-notice';
+  doorNotice.setAttribute('role', 'status');
+  game.appendChild(doorNotice);
+  let noticeTimer = null;
+  window.addEventListener('hud-door-locked', event => {
+    const s = event.detail;
+    const missing = Math.max(0, s.coinsRequired - s.levelCoins);
+    doorNotice.textContent = missing > 0
+      ? `Door locked: collect ${missing} more coin${missing === 1 ? '' : 's'}`
+      : 'Door locked: take the crystal first';
+    doorNotice.classList.add('show');
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => doorNotice.classList.remove('show'), 1800);
+  });
 
   const $ = id => document.getElementById(id);
   const fire = (name, detail) => window.dispatchEvent(
@@ -130,11 +152,13 @@ export function initHUD() {
     dot.classList.toggle('warn', state.status === 'paused' || (state.status === 'ready' && !usable));
     dot.classList.toggle('bad', state.status === 'caught');
 
-    $('objective').innerHTML = !state.needsArtefact
-      ? 'Reach the exit door.<br>Grab coins on the way. No way back.'
-      : state.hasArtefact
-        ? 'The crystal is yours.<br>Get to the exit door.'
-        : 'Find the crystal in the vault.<br>Then escape through the exit door.';
+    const coinGoal = state.coinsRequired ?? 0;
+    const coinsLeft = Math.max(0, coinGoal - (state.levelCoins ?? 0));
+    $('objective').innerHTML = coinsLeft > 0
+      ? `Collect ${coinGoal} coins to open the exit door.<br>${coinsLeft} to go. No way back.`
+      : state.needsArtefact && !state.hasArtefact
+        ? 'Coins done. Take the crystal by the door,<br>then escape.'
+        : 'The exit door is open.<br>Get through it.';
     const levelLabel = state.level ? `${state.level} / ${state.levelCount} · ${state.levelName}` : '--';
     $('hud-level').textContent = levelLabel;
     // Frame title above the game: "MUSEUM FLOOR · LEVEL 03 · THE GALLERY HALL".
@@ -143,7 +167,16 @@ export function initHUD() {
         + ` · ${state.levelName.toUpperCase()}`;
     }
     $('hud-coins').textContent = state.level
-      ? `${state.coins} total (${state.levelCoins}/${state.levelCoinTotal} here)` : '--';
+      ? `${state.levelCoins} / ${coinGoal} needed (${state.levelCoinTotal} here) · ${state.coins} total` : '--';
+    const showChip = state.level && ['playing', 'paused', 'ready'].includes(state.status);
+    coinChip.style.display = showChip ? 'flex' : 'none';
+    coinChip.classList.toggle('done', coinsLeft === 0);
+    if (state.doorOpen) doorNotice.classList.remove('show'); // stale "locked" notice
+    coinChip.innerHTML = coinsLeft > 0
+      ? `<span class="coin-dot"></span><b>${state.levelCoins} / ${coinGoal}</b>&nbsp;coins to open the door`
+      : state.needsArtefact && !state.hasArtefact
+        ? `<span class="coin-dot"></span><b>${state.levelCoins} / ${coinGoal}</b>&nbsp;· now take the crystal`
+        : '<b>✓ Door open</b>';
 
     // Readout
     $('hud-bpm').textContent = sensor.smoothedBpm ?? sensor.bpm ?? '--';
@@ -188,8 +221,8 @@ export function initHUD() {
         eyebrow: state.level ? `LEVEL ${state.level} OF ${state.levelCount} · ${state.levelName.toUpperCase()}` : 'THE MUSEUM JOB',
         title: usable ? 'Ready when you are.' : 'Waiting for heart-rate input.',
         subtitle: sensorHint ?? (state.needsArtefact
-          ? 'Take the crystal from the vault, then escape through the exit door.'
-          : 'Reach the exit door. Coins are a bonus. There is no way back.'),
+          ? `Collect ${state.coinsRequired} coins and take the crystal, then escape through the exit door.`
+          : `Collect ${state.coinsRequired} coins to open the exit door. There is no way back.`),
         button: 'banner-start-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
       },
       paused: {

@@ -55,6 +55,9 @@ class IntegrationScene extends Phaser.Scene {
 
         // Door: light the whole room for the animation, then auto-start the
         // next level once it is built (no way back, no extra Start click).
+        museum.events.on('engine:door-locked', (s) => {
+            window.dispatchEvent(new CustomEvent('hud-door-locked', { detail: s }));
+        });
         museum.events.on('engine:door', () => {
             visibilitySystem?.revealAll(3000, 400);
             playDoorVictory();
