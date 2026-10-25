@@ -70,7 +70,7 @@ Heart rate is a gameplay input, **not a fear score, emotion detector or diagnosi
 - Replay, co-op, elaborate AI, additional levels and watch companion apps are out of MVP scope.
 
 Required starter scripts: `dev`, `build`, `preview`, `test`. Document the actual test
-runner and minimum Node version when the starter is committed. They do not exist yet.
+runner and minimum Node version when the starter is committed. Test runner: Vitest. Minimum Node version: 24.12.0.
 
 ## 3. Roles, files and first deliverables
 
@@ -342,7 +342,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | Soham | Implemented and tested on feature branch; integration pending | Mehal reviews/wires engine; Shyam binds routes/colliders | [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), code `8a15f7e`; 4 geometry + 5 Chromium tests; fixture build passed |
 | Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
 | Shyam | Assigned; guards not implemented | Agree geometry dependency; implement patrol + pulse response | None for fresh build |
-| Mehal | Mehal milestone complete: Pulse, FX, HUD, and Visibility integrated. Awaiting guard AI and real sensor PRs. | Initialize Vite/Phaser 3 once and publish starter commit | None for fresh build |
+| Mehal | Integration milestone complete | Review and integrate Guard AI and Heart Rate PRs into main | Commits ba8eb96 to ca21070 |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
 - Code: `feature/game-engine` at `8a15f7ed5dc1e4c0a4daa6fc2dd60b3b8bb3b924`,
