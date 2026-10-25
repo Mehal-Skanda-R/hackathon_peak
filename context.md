@@ -334,6 +334,21 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
+### Museum preview white-canvas fix — 25 Oct 2026 (Soham)
+- User preview at port 5174 showed a white broken canvas while status still said
+  VICTORY. The actual affected tab console reported: WebGL Context lost. Renderer disabled.
+- [PR #5](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/5),
+  `fix/preview-canvas` @ `98f0544cbebf1d34e8c92a03b4b39f68ee11c8f9`: use Phaser.CANVAS
+  in the art/engine fixture, which has no WebGL-only effects. Production main and
+  gameplay/sensor/guard contracts remain unchanged.
+- Reloaded affected tab and visually verified the museum restored. Four geometry
+  + five Chromium checks passed with WebGL disabled, including full heist/victory/
+  restart and a 2D-context assertion. Fixture build passed.
+- Mehal: review/merge PR #5. Keep production WebGL for the inverted visibility
+  mask; the renderer choice here is specific to the isolated art/engine preview.
+- Art PR #3 is already merged into main (`b108e0a`); older pending-art notes are historical.
+
+
 ### Restart and runner fix verification — 25 Oct 2026, 11:16 IST (Soham)
 
 Checked Mehal's code fix `b5efa88` on main snapshot `e8fbcce`. This supersedes
