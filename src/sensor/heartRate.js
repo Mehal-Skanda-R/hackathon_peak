@@ -166,6 +166,10 @@ export function startCalibration() {
 export function setSensorMode(mode) {
   if (mode !== 'live' && mode !== 'test') return;
 
+  if (currentState.mode === mode && mode === 'test' && watchdogTimer !== null) {
+    return;
+  }
+
   disconnectHeartRate();
 
   currentState.mode = mode;
@@ -173,9 +177,9 @@ export function setSensorMode(mode) {
 
   if (mode === 'test') {
     currentState.connected = false;
-    testSensor.start();      
-    startWatchdog();       
-    startCalibration();     
+    testSensor.start();
+    startWatchdog();
+    startCalibration();
   }
 
   notifySubscribers();
