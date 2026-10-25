@@ -39,10 +39,13 @@ export default class VisibilitySystem {
 
     // Faint outline of every wall/obstacle, always visible above the darkness,
     // so the layout stays readable between pulses (details still need light).
+    // Soft edge: a wide faint halo under a thin brighter line.
     this.outlines = this.scene.add.graphics().setDepth(50.5);
-    this.outlines.lineStyle(1, 0x9cc3c6, 0.28);
-    for (const wall of mapGeometry.walls) {
-      this.outlines.strokeRect(wall.x + 0.5, wall.y + 0.5, wall.width - 1, wall.height - 1);
+    for (const [width, alpha] of [[4, 0.12], [2, 0.5]]) {
+      this.outlines.lineStyle(width, 0xa8d8da, alpha);
+      for (const wall of mapGeometry.walls) {
+        this.outlines.strokeRect(wall.x + 1, wall.y + 1, wall.width - 2, wall.height - 2);
+      }
     }
 
     this.activePulses = [];
