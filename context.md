@@ -203,7 +203,7 @@ offset 1. Validate length, finite positive readings and plausible sensor values;
 publish the accepted range. Reject malformed input without breaking the stream.
 Optional RR data is not required for MVP.
 
-Calibration duration: LIVE 45 seconds; TEST 3 seconds (simulated input; decision below); require valid fresh samples and restart
+Calibration duration: LIVE 20 seconds; TEST 3 seconds (decisions in section 9); require valid fresh samples and restart
 calibration on signal loss. Initial smoothing: EMA alpha 0.2, seed with first valid
 sample. Initial stale threshold: 5000 ms since last valid reading. Detect silence
 with a timer even when no notification arrives. Unready/stale input must not be
@@ -745,3 +745,7 @@ context commit verified on main (or publication pending/failed).
   TEST mode calibration shortened from 45 s to 3 s (`4e5b6bd`); LIVE keeps 45 s for a
   real resting baseline. Same state shape and gating; HUD shows the matching estimate.
   npm test 31 passed; fresh load → Start enabled after ~4.3 s in Chromium.
+- 25 Oct 2026 — Shyam: LIVE calibration shortened from 45 s to 20 s so live demos start
+  sooner (~20 readings at ~1 Hz). TEST stays 3 s. npm test 31 passed. Deployed at
+  https://heartbeat-heist.vercel.app (auto-deploys from main). Baseline stability with
+  the real wearable is untested; Shubranshu to confirm on the device.
