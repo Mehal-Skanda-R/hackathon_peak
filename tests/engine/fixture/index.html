@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Heartbeat Heist · engine fixture</title>
+  <style>
+    body { margin: 24px auto; padding: 0 16px; max-width: 800px; color: #e1edf5; background: #09111c; font: 14px system-ui; }
+    h1 { font-size: 24px; margin-bottom: 6px; }
+    #game { width: 100%; aspect-ratio: 25 / 17; }
+    canvas { display: block; }
+    button { margin: 4px 6px 12px 0; padding: 8px 12px; cursor: pointer; }
+    p { color: #b0c6d6; }
+  </style>
+</head>
+<body>
+  <h1>Heartbeat Heist — engine fixture</h1>
+  <p>ISOLATED ENGINE TEST · No sensor, guards, pulses or production HUD</p>
+  <button id="start">Start engine test</button>
+  <button id="pause">Pause</button>
+  <button id="resume">Resume</button>
+  <button id="catch">Simulate caught</button>
+  <button id="restart">Restart</button>
+  <output id="status" aria-live="polite">Loading…</output>
+  <div id="game" aria-label="Museum engine test"></div>
+  <p>WASD / arrows · Gold: artefact · Green: exit · Teal: cover · R: return to ready</p>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
