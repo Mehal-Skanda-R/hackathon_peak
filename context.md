@@ -808,3 +808,7 @@ context commit verified on main (or publication pending/failed).
   the white outline ring became a faint soft glow band. Radius/timing/exposure unchanged.
 - 25 Oct 2026 — Shyam: the pulse light/glow now follows the thief while it expands (drawn at
   the current player position). Guard exposure still uses the pulse's emission snapshot.
+- 25 Oct 2026 — Shyam: constant dim vision circle (radius 120 px = 120% of base pulse radius,
+  28% strength, soft edge) follows the thief and shows the map faintly; it never shows guards.
+  Guards are drawn only in pulse light/preview (VisibilitySystem.revealAt + GuardSystem
+  setVisibilityProbe). Visual only; detection unchanged.
