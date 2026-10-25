@@ -59,13 +59,18 @@ class IntegrationScene extends Phaser.Scene {
         museum.events.on('engine:door-locked', (s) => {
             window.dispatchEvent(new CustomEvent('hud-door-locked', { detail: s }));
         });
-        museum.events.on('engine:door', () => {
+        museum.events.on('engine:door', (s) => {
             visibilitySystem?.revealAll(3000, 400);
-            playDoorVictory();
+            // Between floors the door plays the victory sound; on the final floor
+            // it is saved for the Heist Complete screen (engine:victory below).
+            if (s.level < s.levelCount) playDoorVictory();
         });
         // Campaign progress: finishing a floor unlocks the next one.
         museum.events.on('engine:level-complete', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
-        museum.events.on('engine:victory', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
+        museum.events.on('engine:victory', (s) => {
+            recordLevelComplete(s.level, s.coins, LEVELS.length);
+            playDoorVictory(); // as the Heist Complete screen appears
+        });
 
         // Home screen: play a floor (or continue the paused one); menu pauses play.
         const homeOpen = () => document.body.classList.contains('home-open');
