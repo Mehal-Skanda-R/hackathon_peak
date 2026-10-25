@@ -464,7 +464,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | --- | --- | --- | --- |
 | Soham | Engine merged; art PR #3 awaiting review | Support art integration; playtest walls/cover/objectives and two consecutive runs | [Art PR #3](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/3), `db5fd09`; 4 geometry + 5 Chromium checks, fixture/root builds and TEST-mode smoke passed |
 | Shubranshu | Sensor code merged; hardware unverified | Fix normal TEST startup with Mehal; verify state/calibration/loss and actual device | Device/model and live results pending |
-| Shyam | Guards merged/wired; component checks pass; lifecycle audit issues open | Verify integrated guards and second-run reset/disposal with Mehal | `feature/guard-ai` @ `ffc4cdd`; `node --test tests/guards/guards.test.js` 14 passed; browser smoke run with local-only wiring, no console errors |
+| Shyam | Guards integrated on main; integrated-play + restart verified; disposal fix in [PR #4](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/4) | Mehal merges PR #4; retest after TEST-startup/gating fixes | `feature/guard-ai` @ `9f0c238`; 18 guard tests passed; Chromium playthrough of combined game (two runs) passed, no errors |
 | Mehal | All core modules wired; integration acceptance blockers recorded below | Fix install/tests, valid-input gating, TEST startup and restart; review art PR #3 | Commits ba8eb96 to ca21070 |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
@@ -542,11 +542,27 @@ completion. Prior prototype tests do not count; the engine results below are fre
   no catch through walls, no catch from pulse alone, give-up/return, pause gating, reset/destroy.
   Not yet tested: full integrated play, real sensor. Balance is untested.
 
+### Shyam's integrated-play check — 25 Oct 2026 (IST)
+- Tested merged `main` @ `f4c0207` (includes Mehal's restart fix and art PR #3) plus
+  [PR #4](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/4) (`9f0c238`), Chromium, TEST mode,
+  `tests/guards/integrated-play.cjs`. No page or console errors.
+- Verified: guards idle in ready; both patrol, never inside walls; hidden pulse gain ≈0.05
+  vs exposed ≈0.24; chase → caught with exactly 1 `guards:caught`; guards frozen while caught
+  and paused. Restart (R): ready, both guards at (304,80)/(560,144), suspicion 0, exactly
+  4 live guard display objects; second run patrols and catches again (1 new event).
+- PR #4 fixes the audit `setSize` on null: GuardSystem drops views on scene `shutdown`
+  and never touches destroyed objects. Routes re-checked against current WALLS (unchanged).
+- Harness workaround: the TEST sensor only produced readings after switching live → test
+  (initial BPM stays null), so Start-gating/TEST startup remain Mehal + Shubranshu items.
+- Root `npm test` (Vitest) finds no suites in `node:test` files; run guard tests with
+  `node --test tests/guards/guards.test.js` (18 passed) until Mehal decides the config.
+- Not tested: victory-state gating, real sensor, balance.
+
 Open problems:
 - Exact sensor model/availability and actual desktop connection; do not assume Apple
   Watch/Galaxy Watch exposes the standard BLE service without an extra bridge.
 - Real seated BPM variation and appropriate sensitivity; initial constants are untested.
-- Map dimensions/speed selected by Soham above; guard routes/speeds published in Shyam's guard handoff; integration wiring pending (Mehal).
+- Map dimensions/speed selected by Soham above; guard routes/speeds published in Shyam's guard handoff; guards integrated and verified in play (see Shyam's integrated-play check).
 - Exact GameState writer API and initial scene wiring; Soham + Mehal own this decision.
 - Team repository write access and hosting access must be verified per teammate/AI.
 - No role acknowledgement or implementation is claimed on behalf of an absent teammate.
