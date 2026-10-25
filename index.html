@@ -3,14 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Heartbeat Heist</title>
+    <title>Heartbeat Heist · The Midnight Collection</title>
     <link rel="stylesheet" href="/src/style.css">
   </head>
   <body>
-    <div id="app">
-      <div id="game-container"></div>
-      <div id="hud-container"></div>
-    </div>
+    <main class="shell">
+      <nav class="masthead" aria-label="Project">
+        <span class="wordmark">
+          <svg viewBox="0 0 42 30" aria-hidden="true"><path d="M1 16h9l5-12 7 23 6-15 4 4h9" /></svg>
+          HEARTBEAT <b>HEIST</b>
+        </span>
+        <span class="edition">THE MIDNIGHT COLLECTION <i></i> CONFLUENCE BUILDATHON 2026</span>
+      </nav>
+      <header class="page-heading">
+        <div><p class="eyebrow">OPERATION 001 / THE MUSEUM JOB</p><h1>Your heartbeat reveals the world.<br>It also reveals you.</h1></div>
+        <div class="status-wrap"><span class="status-dot" id="status-dot"></span><output id="hud-status" aria-live="polite">Loading…</output></div>
+      </header>
+      <div class="layout">
+        <section class="museum-frame" id="museum-frame" aria-label="Playable museum">
+          <div class="frame-top">
+            <span><i></i> MUSEUM FLOOR · LEVEL 01</span>
+            <button class="frame-btn" id="fullscreen-btn" aria-label="Toggle full screen">⛶ FULL SCREEN <kbd>F</kbd></button>
+          </div>
+          <div id="game-container" aria-label="Heartbeat Heist game"></div>
+          <div class="frame-bottom"><span><b>W A S D</b> / ARROWS TO MOVE</span><span><b>SPACE</b> START / RESUME</span><span><b>R</b> RESTART</span></div>
+        </section>
+        <aside class="briefing" id="hud-container">
+          <!-- Filled by src/ui/hud.js -->
+        </aside>
+      </div>
+      <footer class="controls">
+        <span class="footer-note">Measured heart rate drives automatic pulses: they reveal the dark museum, and they expose you to the guards.</span>
+      </footer>
+    </main>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

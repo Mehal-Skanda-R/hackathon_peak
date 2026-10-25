@@ -132,6 +132,8 @@ const config = {
     type: Phaser.AUTO,
     width: 800, height: 544,
     parent: 'game-container', pixelArt: true,
+    // Fit the 800x544 world into the frame (and the whole screen in full screen).
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     physics: { default: 'arcade', arcade: { debug: false } },
     scene: [MuseumScene]
 };
