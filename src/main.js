@@ -8,6 +8,7 @@ import GuardSystem from './game/GuardSystem.js';
 import { initHUD } from './ui/hud.js';
 import { initHome } from './ui/home.js';
 import { initAudio, playDoorVictory, toggleMute } from './ui/audio.js';
+import { initEndScreens } from './ui/endscreens.js';
 import { recordLevelComplete } from './ui/progress.js';
 import { LEVELS } from './game/config.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
@@ -76,6 +77,7 @@ class IntegrationScene extends Phaser.Scene {
                 if (isSensorUsable(state.sensor)) museum.setPaused(false);
                 return;
             }
+            if (level === 1) setRunDeaths(0); // a fresh run
             museum.events.once('engine:ready', () => {
                 if (isSensorUsable(getGameState().sensor)) museum.startRun();
             });
@@ -93,6 +95,19 @@ class IntegrationScene extends Phaser.Scene {
                 if (isSensorUsable(getGameState().sensor)) museum.startRun();
             });
         });
+
+        // Deaths in the current run (since the last start from level 1).
+        let runDeaths = 0;
+        const setRunDeaths = (n) => { runDeaths = n; updateGameState({ runDeaths }); };
+        setRunDeaths(0);
+        museum.events.on('engine:caught', () => setRunDeaths(runDeaths + 1));
+        const startWhenReady = () => museum.events.once('engine:ready', () => {
+            if (isSensorUsable(getGameState().sensor)) museum.startRun();
+        });
+        // End screens: Replay level, Restart from level 1, Home.
+        window.addEventListener('hud-end-replay', () => { startWhenReady(); museum.restartRun(); });
+        window.addEventListener('hud-end-restart', () => { setRunDeaths(0); startWhenReady(); museum.restartGame(); });
+        window.addEventListener('hud-end-home', () => window.dispatchEvent(new Event('hud-show-home')));
 
         museum.events.on('guards:caught', () => {
             museum.catchPlayer();
@@ -204,6 +219,7 @@ const config = {
 
 initHUD();
 initHome();
+initEndScreens();
 initAudio(); // after the HUD/home so their sound buttons get the saved mute state
 window.addEventListener('hud-toggle-sound', () => toggleMute());
 

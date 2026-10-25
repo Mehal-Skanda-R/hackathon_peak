@@ -233,16 +233,7 @@ export function initHUD() {
           + (sensorHint ?? 'Input is back. Resume when you are ready.'),
         button: 'banner-resume-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
       },
-      caught: {
-        eyebrow: 'OPERATION FAILED', title: 'Caught.',
-        subtitle: `A guard got you on level ${state.level ?? 1}. Try this level again.`,
-        button: 'restart-btn', hint: 'OR PRESS R', tone: 'caught',
-      },
-      victory: {
-        eyebrow: 'OPERATION COMPLETE', title: 'You escaped.',
-        subtitle: `The golden heart of the museum is yours, with ${state.coins ?? 0} coins. Play again starts from level 1.`,
-        button: 'restart-btn', hint: 'OR PRESS R', tone: 'victory',
-      },
+      // caught / victory use the full-screen end screens (src/ui/endscreens.js).
     }[state.status];
     banner.style.display = screen ? 'flex' : 'none';
     if (screen) {

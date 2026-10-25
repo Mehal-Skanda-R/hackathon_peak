@@ -161,3 +161,35 @@ body.home-open { overflow: hidden; }
 #door-notice { position: absolute; left: 50%; bottom: 12%; transform: translate(-50%, 6px); z-index: 4; padding: 9px 16px; border: 1px solid #ff8a7a88;
   border-radius: 6px; background: #1a0d0ee6; color: #ffd2c9; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
 #door-notice.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---- End screens (src/ui/endscreens.js): Mission failed / Heist complete ---- */
+#end-screen { display: none; position: fixed; inset: 0; z-index: 190; background: #030405; align-items: center; justify-content: center; }
+#end-screen.show { display: flex; }
+body.home-open #end-screen { display: none; }
+.end-art { position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; container-type: inline-size; }
+.end-art[hidden] { display: none; }
+.end-art img { position: absolute; inset: 0; width: 100%; height: 100%; user-select: none; }
+.end-stats { position: absolute; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqw; padding: 1.3cqw;
+  border-radius: 1.4cqw; background: linear-gradient(180deg, #0b0a08e6, #050505f0); }
+.end-stats.gold { border: 1px solid #c79a3c; box-shadow: 0 0 2.2cqw #f0b84a40, inset 0 0 1.2cqw #f0b84a22; }
+.end-stats.red { border: 1px solid #b0303a; box-shadow: 0 0 2.2cqw #ff3b4840, inset 0 0 1.2cqw #ff3b4822; }
+.end-stat { display: flex; align-items: center; justify-content: center; gap: 1.5cqw; border-radius: .9cqw; background: #0a0908e0; min-width: 0; }
+.end-stats.gold .end-stat { border: 1px solid #c79a3c99; }
+.end-stats.red .end-stat { border: 1px solid #8a2a3299; }
+.end-icon svg { width: 4.3cqw; height: 4.3cqw; display: block; }
+.end-icon.ivory { color: #ece6d6; } .end-icon.red { color: #e0222f; } .end-icon.gold { color: #f2c14e; }
+.end-stat-text { display: flex; flex-direction: column; align-items: center; gap: .3cqw; }
+.end-stat-text small { font: 600 1.15cqw 'Segoe UI', system-ui, sans-serif; letter-spacing: .12em; color: #ece6d6; }
+.end-stat-text b { font-size: 3.3cqw; line-height: 1; color: #f5c75a; font-variant-numeric: tabular-nums; }
+.end-victory .end-stat-text b { font-family: Georgia, 'Times New Roman', serif; text-shadow: 0 0 1cqw #f0b84a55; }
+.end-failed .end-stat-text b { font-family: 'Segoe UI', system-ui, sans-serif; font-weight: 700; }
+.end-btn { position: absolute; display: flex; align-items: center; justify-content: center; gap: 1.4cqw; border-radius: 1.1cqw;
+  font: 600 1.75cqw 'Segoe UI', system-ui, sans-serif; letter-spacing: .12em; cursor: pointer; transition: filter .15s, box-shadow .15s, background .15s; }
+.end-btn svg { width: 2.4cqw; height: 2.4cqw; flex: none; }
+.end-btn.gold { color: #fbe7b0; border: 2px solid #f0c35a; background: linear-gradient(180deg, #1a1306e6, #0b0904f0);
+  box-shadow: 0 0 2cqw #f0b84a66, inset 0 0 1.4cqw #f0b84a33; }
+.end-btn.red { color: #f3e9e9; border: 1px solid #ffffff55; background: #0d0c0ee6; font-size: 1.45cqw; }
+.end-btn.primary-red { font-size: 1.75cqw; border: 2px solid #ff4a4a; background: linear-gradient(180deg, #4a0d12e6, #22070af0);
+  box-shadow: 0 0 2.2cqw #ff3b48aa, inset 0 0 1.4cqw #ff3b4844; }
+.end-btn:hover, .end-btn:focus-visible { filter: brightness(1.25); outline: none; }
+.end-btn.red:not(.primary-red):hover, .end-btn.red:not(.primary-red):focus-visible { border-color: #ff8a8a; box-shadow: 0 0 1.4cqw #ff3b4855; }
