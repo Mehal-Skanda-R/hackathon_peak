@@ -812,3 +812,7 @@ context commit verified on main (or publication pending/failed).
   28% strength, soft edge) follows the thief and shows the map faintly; it never shows guards.
   Guards are drawn only in pulse light/preview (VisibilitySystem.revealAt + GuardSystem
   setVisibilityProbe). Visual only; detection unchanged.
+- 25 Oct 2026 — Shyam: hiding calm-down. While the player stays in cover, an alerted guard
+  searches near the last sighting; after 3 s hidden it leaves and its suspicion drains
+  linearly to 0 over 5 s (pulses from cover are ignored while calming; a pulse from the open
+  resumes normal rules). Icon: '!' chasing; '?' fades red -> orange -> yellow -> none.
