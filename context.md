@@ -847,3 +847,6 @@ context commit verified on main (or publication pending/failed).
 - 25 Oct 2026 — Shyam: castle home screen (`2384405`) with floor select, How to play,
   progress panel and in-game MENU (pauses as 'Menu open'). Progress (unlocked/completed floors,
   best coins) is per-browser localStorage via src/ui/progress.js. Engine: `startAtLevel(index)`.
+- 25 Oct 2026 — Shyam: audio (`780056f`). Looping game music (public/assets/audio/game-audio.mp3)
+  everywhere; on each door it stops and victory.mp3 plays, then music resumes. Starts on first
+  click/key (browser rule). SOUND ON/OFF toggle in the frame and home menu (per browser).
