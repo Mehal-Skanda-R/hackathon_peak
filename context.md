@@ -808,3 +808,5 @@ context commit verified on main (or publication pending/failed).
   the white outline ring became a faint soft glow band. Radius/timing/exposure unchanged.
 - 25 Oct 2026 — Shyam: the pulse light/glow now follows the thief while it expands (drawn at
   the current player position). Guard exposure still uses the pulse's emission snapshot.
+- 25 Oct 2026 — Shyam: faint permanent outline (1px, 28%) of all walls/obstacles drawn above
+  the darkness so the layout stays readable between pulses; details still need a pulse.
