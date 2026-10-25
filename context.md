@@ -360,7 +360,7 @@ instant changes in heart rate for the demo.
 
 ## 7. Current handoff / status (fresh start)
 
-### Soham's scoped UI fixes — 25 Oct 2026 (PR #8, awaiting merge)
+### Soham's scoped UI fixes — 25 Oct 2026 (PR #8 merged and deployed)
 - Soham explicitly authorized fixing the two audit findings and pushing only those
   changes. Shared integration/UI edits are reviewable in [PR #8](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/8),
   branch `fix/menu-progress-sync`, commit `df2989f`; tested remote tree verified
@@ -378,7 +378,10 @@ instant changes in heart rate for the demo.
   earlier-floor Continue/Enter agreement; one canvas, no page errors.
   Run root Vite, install existing tests/engine deps, then
   `node tests/ui/menu-progress.cjs http://127.0.0.1:5173`.
-- Mehal/integration: review/merge PR #8. Fixes are pushed, not yet claimed deployed.
+- Soham explicitly authorized deployment. PR #8 merged as `2dc834c` and the live
+  https://heartbeat-heist.vercel.app/ now shows fresh progress 0/7, best coins0,
+  Continue Floor01. Production Chromium smoke: Menu pauses, Continue resumes,
+  no page errors. Merged source matches the tested branch. Vercel preview checks passed.
 
 
 
