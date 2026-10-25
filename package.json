@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "node --test tests/guards/guards.test.js tests/engine/geometry.test.js"
   },
   "dependencies": {
     "phaser": "^3.80.0"

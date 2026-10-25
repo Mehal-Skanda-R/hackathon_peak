@@ -6,7 +6,7 @@ import PulseEffects from './game/PulseEffects.js';
 import VisibilitySystem from './game/VisibilitySystem.js';
 import GuardSystem from './game/GuardSystem.js';
 import { initHUD } from './ui/hud.js';
-import { subscribeToHeartRate, setSensorMode, connectHeartRate } from './sensor/heartRate.js';
+import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
 
 class IntegrationScene extends Phaser.Scene {
     constructor() { super('IntegrationScene'); }
@@ -14,11 +14,9 @@ class IntegrationScene extends Phaser.Scene {
         const museum = this.scene.get('MuseumScene');
         const mapGeometry = museum.getMapGeometry();
         
-        // Use let so we can overwrite these on restart
         let pulseSystem, visibilitySystem, guardSystem, pulseEffects;
 
         const initSystems = () => {
-            // Destroy old instances to clear out graphics and event listeners
             if (visibilitySystem && typeof visibilitySystem.destroy === 'function') visibilitySystem.destroy();
             if (guardSystem && typeof guardSystem.destroy === 'function') guardSystem.destroy();
             if (pulseEffects && typeof pulseEffects.destroy === 'function') pulseEffects.destroy();
@@ -31,10 +29,8 @@ class IntegrationScene extends Phaser.Scene {
             pulseEffects.graphics.setDepth(51);
         };
 
-        // Initialize systems for the first run
         initSystems();
 
-        // Recreate all systems whenever the player hits R and restarts
         museum.events.on('engine:ready', () => {
             initSystems();
         });
@@ -55,7 +51,22 @@ class IntegrationScene extends Phaser.Scene {
 
         museum.events.on('update', (time, delta) => {
             const state = getGameState();
-            if (pulseSystem) pulseSystem.update(delta, state.sensor, state);
+            
+            if (state.status === 'playing') {
+                const s = state.sensor;
+                const isUsable = s.mode === 'test' 
+                    ? (s.calibrated && !s.stale && s.smoothedBpm !== null)
+                    : (s.connected && s.calibrated && !s.stale && s.smoothedBpm !== null);
+                
+                if (!isUsable) {
+                    museum.setPaused(true, 'Sensor input lost or stale');
+                }
+            }
+
+            if (pulseSystem) {
+                const sensorData = { ...state.sensor, bpm: state.sensor.smoothedBpm || state.sensor.bpm };
+                pulseSystem.update(delta, sensorData, state);
+            }
             if (pulseEffects) pulseEffects.update(delta);
             if (visibilitySystem) visibilitySystem.update(delta);
             
@@ -68,7 +79,15 @@ class IntegrationScene extends Phaser.Scene {
         });
 
         window.addEventListener('hud-start-clicked', () => {
-            if (getGameState().status === 'ready') museum.startRun();
+            const state = getGameState();
+            const s = state.sensor;
+            const canStart = s.mode === 'test'
+                ? (s.calibrated && !s.stale && s.smoothedBpm !== null)
+                : (s.connected && s.calibrated && !s.stale && s.smoothedBpm !== null);
+
+            if (state.status === 'ready' && canStart) {
+                museum.startRun();
+            }
         });
 
         window.addEventListener('hud-ble-clicked', async () => {
@@ -83,12 +102,18 @@ class IntegrationScene extends Phaser.Scene {
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
-            if (getGameState().status === 'ready') museum.startRun();
+            const state = getGameState();
+            if (state.status === 'ready') {
+                window.dispatchEvent(new Event('hud-start-clicked'));
+            }
         });
 
         subscribeToHeartRate((sensorState) => {
             updateGameState({ sensor: sensorState });
         });
+
+        setSensorMode('test');
+        setTestBpm(72);
     }
 }
 
