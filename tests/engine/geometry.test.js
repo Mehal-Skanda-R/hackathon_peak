@@ -19,16 +19,18 @@ test('walls are within the 800 × 544 world; invalid/outside positions are block
   assert.equal(canOccupy(40, 100), false);
 });
 
-test('every walkable tile including artefact, exit and cover is reachable from spawn', () => {
+test('all floor/objectives remain reachable and the artefact route requires a detour', t => {
   const start = [Math.floor(SPAWN.x / TILE_SIZE), Math.floor(SPAWN.y / TILE_SIZE)];
   const queue = [start];
   const visited = new Set([start.join(',')]);
+  const distances = new Map([[start.join(','), 0]]);
   for (let i = 0; i < queue.length; i++) {
     const [x, y] = queue[i];
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = x + dx, ny = y + dy, key = `${nx},${ny}`;
       if (visited.has(key) || !canOccupy((nx + 0.5) * TILE_SIZE, (ny + 0.5) * TILE_SIZE)) continue;
       visited.add(key);
+      distances.set(key, distances.get(`${x},${y}`) + 1);
       queue.push([nx, ny]);
     }
   }
@@ -39,6 +41,10 @@ test('every walkable tile including artefact, exit and cover is reachable from s
     ...HIDING_ZONES.map(z => ({ x: z.x + 16, y: z.y + 16 }))]) {
     assert.ok(visited.has(`${Math.floor(point.x / TILE_SIZE)},${Math.floor(point.y / TILE_SIZE)}`));
   }
+  const steps = distances.get(`${Math.floor(ARTEFACT.x / TILE_SIZE)},${Math.floor(ARTEFACT.y / TILE_SIZE)}`);
+  // Preserve the intended moderate detour, while avoiding an excessively long maze.
+  assert.ok(steps >= 44 && steps <= 70, `Artefact route is ${steps} tiles`);
+  t.diagnostic(`Shortest four-direction artefact route: ${steps} tiles (${steps * TILE_SIZE} px)`);
 });
 
 test('diagonal speed is normalized, opposite keys cancel, no input stops', () => {

@@ -19,11 +19,19 @@ exit rectangles use top-left x/y/width/height. CSS scaling does not change the w
 
 - Player: 18 × 18 body; 160 pixels/second; normalized WASD/arrow movement.
 - Spawn: (80, 464), initially inside the locked exit.
-- Artefact: center (720, 112), 20 × 20, automatic overlap pickup.
+- Artefact: center (720, 80), 20 × 20, automatic overlap pickup.
 - Exit: rectangle (32, 416, 64, 96); only wins with the artefact.
 - Cover: (64,160,64,64), (416,256,64,64), (672,256,64,64). Hiding requires the full
   body inside a zone; movement within it is allowed. No pulse behavior lives here.
 - Geometry, arrays and snapshots are frozen. All visuals are generated with Phaser.
+
+Playtest revision: Soham found the original artefact route too easy. The bottom
+gallery shortcut is closed, a central partition adds a turn, and an upper-right
+artefact-room partition requires approaching from the west. World size, player
+speed and cover positions stay the same. All floor tiles/cover/objectives must
+remain reachable; guard routes must be checked against this updated wall geometry.
+The shortest four-direction route is now 44 tiles (1408 px), up from 31 tiles
+(992 px). Fresh geometry checks and all five browser checks passed after this revision.
 
 `config.js` exports `TILE_SIZE`, `MAP_COLUMNS`, `MAP_ROWS`, `WORLD_WIDTH`,
 `WORLD_HEIGHT`, `PLAYER_SIZE`, `PLAYER_SPEED`, `SCENE_KEY`, `WALLS`, `HIDING_ZONES`,

@@ -19,12 +19,17 @@ const center = (column, row) => Object.freeze({
 export const WALLS = Object.freeze([
   tileRect(0, 0, 25, 1), tileRect(0, 16, 25, 1),
   tileRect(0, 1, 1, 15), tileRect(24, 1, 1, 15),
-  tileRect(8, 1, 1, 4), tileRect(8, 7, 1, 6), tileRect(8, 15),
+  // Enter the central gallery through the upper doorway; no bottom shortcut.
+  tileRect(8, 1, 1, 4), tileRect(8, 7, 1, 9),
   tileRect(16, 1, 1, 8), tileRect(16, 11, 1, 5),
   tileRect(1, 8, 3), tileRect(6, 8, 2),
   tileRect(17, 6, 3), tileRect(22, 6, 2),
   tileRect(11, 4, 2, 2), tileRect(11, 11, 2, 2),
   tileRect(20, 11, 2, 2),
+  // Gallery partitions create turns without narrowing the passage below a tile.
+  tileRect(9, 7, 5, 1),
+  // The artefact room is approached from its west opening, not straight from below.
+  tileRect(18, 3, 6, 1),
 ]);
 export const HIDING_ZONES = Object.freeze([
   Object.freeze({ id: 'west-cover', ...tileRect(2, 5, 2, 2) }),
@@ -32,7 +37,7 @@ export const HIDING_ZONES = Object.freeze([
   Object.freeze({ id: 'east-cover', ...tileRect(21, 8, 2, 2) }),
 ]);
 export const SPAWN = center(2, 14);
-export const ARTEFACT = Object.freeze({ ...center(22, 3), size: 20 });
+export const ARTEFACT = Object.freeze({ ...center(22, 2), size: 20 });
 export const EXIT = tileRect(1, 13, 2, 3);
 export const MAP_GEOMETRY = Object.freeze({
   width: WORLD_WIDTH, height: WORLD_HEIGHT, tileSize: TILE_SIZE,
