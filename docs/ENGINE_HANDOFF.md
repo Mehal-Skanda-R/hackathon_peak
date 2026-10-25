@@ -157,6 +157,13 @@ gold artefact, green exit, teal cover, R to return to ready. Pause/Resume/Simula
 caught buttons exercise engine controls only. Test hooks live exclusively in the
 fixture (`window.__ENGINE_TEST__`); production modules expose no browser globals.
 
+The fixture deliberately uses Phaser.CANVAS: the embedded browser was observed
+losing its WebGL context after a victory, replacing the board with a white broken
+surface while the surrounding DOM stayed alive. The art/physics fixture needs no
+GPU-only effects, so Canvas removes that failure mode. Browser checks run with
+WebGL disabled and assert a 2D drawing context. Production main remains unchanged
+and retains WebGL for Mehal's inverted visibility mask.
+
 The isolated fixture builds with Phaser 3.90.0/Vite 7.3.7 and uses Playwright 1.64.1.
 When the team's starter lands, Mehal can adopt these tests into the root test
 command; production modules continue importing ordinary `phaser`.
