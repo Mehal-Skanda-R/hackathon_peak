@@ -817,7 +817,7 @@ context commit verified on main (or publication pending/failed).
   linearly to 0 over 5 s (pulses from cover are ignored while calming; a pulse from the open
   resumes normal rules). Icon: '!' chasing; '?' fades red -> orange -> yellow -> none.
 
-### Levels, coins and doors — 25 Oct 2026 (Shyam decision; implemented by Shyam's AI, `cc5f9d0`)
+### Levels, coins and doors — 25 Oct 2026 (Shyam decision; implemented by Shyam's AI, `def286c`)
 - **Decision:** more levels are planned, so the crystal is the collectable of the **final level
   only**. Levels are joined by an **exit door**; walking in plays a door animation and loads the
   next level. **No way back** (each level's spawn sits at a barred "NO RETURN" entrance).
