@@ -79,8 +79,10 @@ export default class VisibilitySystem {
       const currentRadius = p.radius * Phaser.Math.Easing.Quadratic.Out(t);
       // Fade the reveal out over the last 40% instead of snapping shut.
       const strength = t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4;
+      // The light follows the thief; guard exposure still uses the emission snapshot.
+      const at = this.scene.getPlayerState?.() ?? p;
       this.brush
-        .setPosition(p.x, p.y)
+        .setPosition(at.x, at.y)
         .setScale(currentRadius / BRUSH_RADIUS)
         .setAlpha(strength);
       this.overlay.erase(this.brush);

@@ -30,10 +30,11 @@ export default class PulseEffects {
       // Soft glow band instead of a hard outline: thin rings whose alpha falls
       // off toward both sides of the reveal edge, fading as the pulse ends.
       const peak = 0.16 * (1 - t);
+      const at = this.scene.getPlayerState?.() ?? p; // ring follows the thief
       for (let k = -BAND_HALF_WIDTH; k <= BAND_HALF_WIDTH; k += 2) {
         const falloff = 1 - Math.abs(k) / (BAND_HALF_WIDTH + 2);
         this.graphics.lineStyle(2, 0xdff4ff, peak * falloff * falloff);
-        this.graphics.strokeCircle(p.x, p.y, Math.max(0, currentRadius * 0.86 + k));
+        this.graphics.strokeCircle(at.x, at.y, Math.max(0, currentRadius * 0.86 + k));
       }
     }
   }
