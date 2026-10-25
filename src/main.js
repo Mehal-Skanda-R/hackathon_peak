@@ -1,57 +1,59 @@
 import Phaser from 'phaser';
+import MuseumScene from './game/MuseumScene.js';
 import { getGameState, updateGameState } from './game/GameState.js';
 import PulseSystem from './game/PulseSystem.js';
 import PulseEffects from './game/PulseEffects.js';
 import { initHUD } from './ui/hud.js';
 
-class DemoScene extends Phaser.Scene {
-    constructor() {
-        super('DemoScene');
-    }
-    
+class IntegrationScene extends Phaser.Scene {
+    constructor() { super('IntegrationScene'); }
     create() {
-        this.pulseSystem = new PulseSystem(this);
-        this.pulseEffects = new PulseEffects(this);
-        
-        updateGameState({
-            status: 'playing',
-            player: { x: 400, y: 272, hiding: false },
-            sensor: { mode: 'test', bpm: 75, pulseDelta: 0 }
+        const museum = this.scene.get('MuseumScene');
+        const pulseSystem = new PulseSystem(museum);
+        const pulseEffects = new PulseEffects(museum);
+
+        museum.events.on('engine:state', (engineState) => {
+            updateGameState(engineState);
         });
-        
+
+        museum.events.on('update', (time, delta) => {
+            const state = getGameState();
+            pulseSystem.update(delta, state.sensor, state);
+            pulseEffects.update(delta);
+        });
+
+        // Listen for the new HUD button
+        window.addEventListener('hud-start-clicked', () => {
+            if (getGameState().status === 'ready') museum.startRun();
+        });
+
+        this.input.keyboard.on('keydown-SPACE', () => {
+            if (getGameState().status === 'ready') museum.startRun();
+        });
+
         this.time.addEvent({
-            delay: 3000,
-            loop: true,
+            delay: 3000, loop: true,
             callback: () => {
-                const currentBpm = getGameState().sensor.bpm;
-                const newBpm = currentBpm === 75 ? 120 : 75;
-                const newDelta = currentBpm === 75 ? 20 : 0;
-                updateGameState({
-                    sensor: { mode: 'test', bpm: newBpm, pulseDelta: newDelta }
-                });
+                const s = getGameState().sensor;
+                const newBpm = s.bpm === 75 ? 120 : 75;
+                updateGameState({ sensor: { ...s, bpm: newBpm, pulseDelta: newBpm === 75 ? 0 : 20 }});
             }
         });
-    }
-    
-    update(time, delta) {
-        const state = getGameState();
-        this.pulseSystem.update(delta, state.sensor, state);
-        this.pulseEffects.update(delta);
     }
 }
 
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 544,
-    parent: 'game-container',
-    pixelArt: true,
-    physics: {
-        default: 'arcade',
-        arcade: { debug: false }
-    },
-    scene: [DemoScene]
+    width: 800, height: 544,
+    parent: 'game-container', pixelArt: true,
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scene: [MuseumScene]
 };
 
 initHUD();
-new Phaser.Game(config);
+updateGameState({ sensor: { mode: 'test', bpm: 75, pulseDelta: 0, connected: false } });
+
+const game = new Phaser.Game(config);
+game.events.once('ready', () => {
+    game.scene.add('IntegrationScene', IntegrationScene, true);
+});

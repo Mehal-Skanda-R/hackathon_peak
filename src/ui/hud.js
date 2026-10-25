@@ -3,20 +3,27 @@ import { subscribeToGameState } from '../game/GameState.js';
 export function initHUD() {
   const container = document.getElementById('hud-container');
   container.innerHTML = `
-    <div style="position:absolute; top:10px; left:10px; color:lime; font-family:monospace; background:rgba(0,0,0,0.7); padding:10px; border: 1px solid lime;">
+    <div style="position:absolute; top:10px; left:10px; color:lime; font-family:monospace; background:rgba(0,0,0,0.7); padding:10px; border: 1px solid lime; z-index:100;">
       <div id="hud-mode">MODE: TEST</div>
       <div id="hud-bpm">BPM: --</div>
       <div id="hud-status">STATUS: READY</div>
+      <button id="start-btn" style="margin-top:10px; padding:5px 10px; background:lime; color:black; font-family:monospace; font-weight:bold; border:none; cursor:pointer;">START RUN</button>
     </div>
   `;
 
   const modeEl = document.getElementById('hud-mode');
   const bpmEl = document.getElementById('hud-bpm');
   const statusEl = document.getElementById('hud-status');
+  const startBtn = document.getElementById('start-btn');
+
+  startBtn.addEventListener('click', () => {
+      window.dispatchEvent(new Event('hud-start-clicked'));
+  });
 
   subscribeToGameState((state) => {
     modeEl.innerText = `MODE: ${state.sensor.mode.toUpperCase()}`;
     bpmEl.innerText = `BPM: ${state.sensor.bpm || '--'}`;
     statusEl.innerText = `STATUS: ${state.status.toUpperCase()}`;
+    startBtn.style.display = state.status === 'ready' ? 'block' : 'none';
   });
 }
