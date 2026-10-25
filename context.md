@@ -341,7 +341,7 @@ completion. Prior prototype tests do not count; the engine results below are fre
 | --- | --- | --- | --- |
 | Soham | Implemented and tested on feature branch; integration pending | Mehal reviews/wires engine; Shyam binds routes/colliders | [PR #1](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/1), code `8a15f7e`; 4 geometry + 5 Chromium tests; fixture build passed |
 | Shubranshu | Assigned; hardware unverified | Identify sensor and verify standard HR notifications | Device/model and results pending |
-| Shyam | Assigned; guards not implemented | Agree geometry dependency; implement patrol + pulse response | None for fresh build |
+| Shyam | Guards implemented and tested on `feature/guard-ai`; integration pending | Mehal wires GuardSystem in `src/main.js` (see Shyam's guard handoff) | `feature/guard-ai` @ `ffc4cdd`; `node --test tests/guards/guards.test.js` 14 passed; browser smoke run with local-only wiring, no console errors |
 | Mehal | Integration milestone complete | Review and integrate Guard AI and Heart Rate PRs into main | Commits ba8eb96 to ca21070 |
 
 ### Soham's engine handoff — 25 Oct 2026, 10:14 IST
@@ -373,11 +373,31 @@ completion. Prior prototype tests do not count; the engine results below are fre
   production integration remain unverified. `npm run dev` serves engine-only fixture
   on port 5174; this is not the shared production starter or a sensor demonstration.
 
+### Shyam's guard handoff — 25 Oct 2026 (IST)
+- Code: `feature/guard-ai` at `ffc4cdd`; files `src/game/Guard.js`, `src/game/GuardSystem.js`,
+  `tests/guards/guards.test.js`. No shared files changed. No PR opened yet.
+- API exactly as section 5. Extra named exports: `GUARD_EVENTS`, `GUARD_ROUTES`,
+  `GUARD_TUNING`, `findPath`. Guards draw their own rectangles + suspicion bar (depth 9).
+- Routes (tile col,row; revised WALLS): `guard-gallery` (9,2)→(15,2)→(15,14)→(9,14);
+  `guard-east` (17,4)→(23,4)→(23,15)→(17,15). Legs walked by 4-direction tile BFS.
+- Adopted tuning = section 4 values (0.25/pulse, 0.08/s decay, hiding ×0.25, chase ≥0.75,
+  catch 22 px with line of sight). Added: body 20 px; speeds patrol 70 / investigate 90 /
+  chase 130 px/s (player 160); chase gives up after 3000 ms without sight; guards don't
+  pass walls (geometry via `scene.canOccupy`/`hasLineOfSight`, not Arcade bodies).
+- Wiring for Mehal: `new GuardSystem(museum, museum.getMapGeometry())`; forward
+  `heartbeat:pulse` to `handlePulse`; call `update(delta, museum.getPlayerState())` only
+  while playing; `guards:caught` → `museum.catchPlayer()`; put `getStates()` into
+  `GameState.guards`; create a fresh GuardSystem after each scene restart and `destroy()` on shutdown.
+- Tests: `node --test tests/guards/guards.test.js` (Node 22.22.0): 14 passed — routes reachable,
+  60 s patrol never inside walls, gain/radius/dedupe/hiding, decay, chase, catch once,
+  no catch through walls, no catch from pulse alone, give-up/return, pause gating, reset/destroy.
+  Not yet tested: full integrated play, real sensor. Balance is untested.
+
 Open problems:
 - Exact sensor model/availability and actual desktop connection; do not assume Apple
   Watch/Galaxy Watch exposes the standard BLE service without an extra bridge.
 - Real seated BPM variation and appropriate sensitivity; initial constants are untested.
-- Map dimensions/speed selected by Soham above; guard routes/speeds and integration collision bindings remain pending.
+- Map dimensions/speed selected by Soham above; guard routes/speeds published in Shyam's guard handoff; integration wiring pending (Mehal).
 - Exact GameState writer API and initial scene wiring; Soham + Mehal own this decision.
 - Team repository write access and hosting access must be verified per teammate/AI.
 - No role acknowledgement or implementation is claimed on behalf of an absent teammate.
