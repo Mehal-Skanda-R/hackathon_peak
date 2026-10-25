@@ -236,3 +236,47 @@ export function thiefTexture(scene, facing, stride) {
     ctx.restore();
   });
 }
+
+// Optional visual-only helper for Shyam. GuardSystem retains movement, suspicion,
+// collision and its 20px logic body; this draws a centered 40px sprite frame.
+export function guardTexture(scene, facing = 'down', stride = 0) {
+  const direction = ['up', 'down', 'left', 'right'].includes(facing) ? facing : 'down';
+  const frame = stride ? 1 : 0;
+  return texture(scene, `guard-${direction}-${frame}`, 40, 40, ctx => {
+    ctx.fillStyle = 'rgba(0,0,0,.65)';
+    ctx.beginPath(); ctx.ellipse(20, 32, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    if (direction === 'left') { ctx.translate(40, 0); ctx.scale(-1, 1); }
+    ctx.fillStyle = '#11202b';
+    ctx.fillRect(13 + frame * 2, 25, 6, 8 - frame * 2);
+    ctx.fillRect(22 - frame * 2, 25, 6, 6 + frame * 2);
+    ctx.fillStyle = '#090e15';
+    ctx.fillRect(12 + frame * 2, 31 - frame * 2, 8, 4);
+    ctx.fillRect(22 - frame * 2, 29 + frame * 2, 8, 4);
+    ctx.fillStyle = '#6e303a';
+    ctx.beginPath(); ctx.moveTo(13, 16); ctx.lineTo(27, 16);
+    ctx.lineTo(29, 28); ctx.lineTo(11, 28); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#a25b54'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#151d23'; ctx.fillRect(12, 25, 16, 3);
+    ctx.fillStyle = '#d0ad65'; ctx.fillRect(18, 25, 4, 3);
+    ctx.fillRect(12, 16, 5, 2); ctx.fillRect(24, 16, 5, 2);
+    ctx.strokeStyle = '#17222b'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(12, 19); ctx.lineTo(10, 26 + frame);
+    ctx.moveTo(28, 19); ctx.lineTo(30, 25 - frame); ctx.stroke();
+    ctx.strokeStyle = '#8e514f'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = direction === 'up' ? '#253640' : '#b09a78';
+    ctx.beginPath(); ctx.ellipse(20, 12, 6, 7, 0, 0, Math.PI * 2); ctx.fill();
+    if (direction !== 'up') {
+      ctx.fillStyle = '#202731';
+      const x = direction === 'down' ? 16 : 22;
+      ctx.fillRect(x, 12, 9, 4);
+      ctx.fillStyle = '#e0bd83'; ctx.fillRect(x + 2, 12, 2, 1);
+    }
+    ctx.fillStyle = '#843b44';
+    ctx.beginPath(); ctx.ellipse(20, 7, 9, 5, -.08, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#c57867'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#18232a'; ctx.fillRect(direction === 'down' ? 12 : 17, 9, 17, 3);
+    ctx.fillStyle = '#d9b672'; ctx.fillRect(18, 6, 4, 3);
+    ctx.restore();
+  });
+}
