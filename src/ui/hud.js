@@ -1,4 +1,5 @@
 import { subscribeToGameState, isSensorUsable } from '../game/GameState.js';
+import { formatTime } from './progress.js';
 
 // Presentation only: renders the briefing panel, live readout, end-of-round
 // screen and full-screen toggle. Buttons dispatch window events that
@@ -71,11 +72,13 @@ export function initHUD() {
   doorNotice.setAttribute('role', 'status');
   game.appendChild(doorNotice);
   let noticeTimer = null;
+  // detail: a string, or { text, tone: 'hint' | 'cleared', ms }.
   window.addEventListener('hud-notice', event => {
-    doorNotice.textContent = event.detail;
-    doorNotice.classList.add('show');
+    const { text, tone = '', ms = 3200 } = typeof event.detail === 'string' ? { text: event.detail } : event.detail;
+    doorNotice.textContent = text;
+    doorNotice.className = `${tone} show`;
     clearTimeout(noticeTimer);
-    noticeTimer = setTimeout(() => doorNotice.classList.remove('show'), 3200);
+    noticeTimer = setTimeout(() => doorNotice.classList.remove('show'), ms);
   });
   window.addEventListener('hud-door-locked', event => {
     const s = event.detail;
@@ -83,7 +86,7 @@ export function initHUD() {
     doorNotice.textContent = missing > 0
       ? `Door locked: collect ${missing} more coin${missing === 1 ? '' : 's'}`
       : 'Door locked: take the crystal first';
-    doorNotice.classList.add('show');
+    doorNotice.className = 'show';
     clearTimeout(noticeTimer);
     noticeTimer = setTimeout(() => doorNotice.classList.remove('show'), 1800);
   });
@@ -178,12 +181,16 @@ export function initHUD() {
     const showChip = state.level && ['playing', 'paused', 'ready'].includes(state.status);
     coinChip.style.display = showChip ? 'flex' : 'none';
     coinChip.classList.toggle('done', coinsLeft === 0);
-    if (state.doorOpen) doorNotice.classList.remove('show'); // stale "locked" notice
+    // Drop a stale "locked" notice once the door opens (hints and results stay).
+    if (state.doorOpen && !doorNotice.classList.contains('hint') && !doorNotice.classList.contains('cleared')) {
+      doorNotice.classList.remove('show');
+    }
     const note = coinsLeft > 0 ? `${coinsLeft} more to open the door`
       : state.needsArtefact && !state.hasArtefact ? 'now take the crystal' : '✓ door open';
     coinChip.innerHTML = `<span class="coin-row"><span class="coin-dot"></span><span class="coin-label">COINS</span>`
       + `<b>${coinsLeft > 0 ? `${state.levelCoins} / ${coinGoal}` : state.levelCoins}</b></span>`
-      + `<span class="coin-note">${note}</span>`;
+      + `<span class="coin-note">${note}</span>`
+      + `<span class="floor-time">⏱ ${formatTime((state.floorSeconds ?? 0) * 1000)}</span>`;
 
     // Readout
     $('hud-bpm').textContent = sensor.smoothedBpm ?? sensor.bpm ?? '--';
@@ -235,8 +242,10 @@ export function initHUD() {
       paused: {
         eyebrow: 'HEIST PAUSED',
         title: 'Paused.',
-        subtitle: (state.pauseReason ? `${state.pauseReason}. ` : '')
-          + (sensorHint ?? 'Input is back. Resume when you are ready.'),
+        subtitle: state.pauseReason === 'Game paused' && !sensorHint
+          ? 'Take a breath. Press Space or P to carry on.'
+          : (state.pauseReason ? `${state.pauseReason}. ` : '')
+            + (sensorHint ?? 'Input is back. Resume when you are ready.'),
         button: 'banner-resume-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
       },
       // caught / victory use the full-screen end screens (src/ui/endscreens.js).

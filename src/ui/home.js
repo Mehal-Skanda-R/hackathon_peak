@@ -1,6 +1,6 @@
 import { LEVELS } from '../game/config.js';
 import { getGameState } from '../game/GameState.js';
-import { loadProgress } from './progress.js';
+import { loadProgress, starText, formatTime } from './progress.js';
 
 // Home screen: the team's castle artwork (public/assets/home/home-screen.webp)
 // with buttons laid over its labels. Progress is live UI over the artwork;
@@ -105,7 +105,7 @@ export function initHome() {
   }
 
   const render = () => {
-    const { unlocked, completed, bestCoins } = loadProgress();
+    const { unlocked, completed, bestCoins, floors = {} } = loadProgress();
     const selected = continueLevel();
     const floor = String(selected).padStart(2, '0');
     $('home-play').innerHTML = `<span aria-hidden="true">▷</span><span>CONTINUE<small>FLOOR ${floor}</small></span>`;
@@ -126,6 +126,10 @@ export function initHome() {
       button.classList.toggle('completed', level <= completed);
       button.setAttribute('aria-current', level === selected ? 'step' : 'false');
       button.querySelector('.floor-state').textContent = locked ? '🔒' : level === selected ? '▷' : level <= completed ? '✓' : '';
+      // Best rating and time, once the floor has been cleared with this version.
+      const record = floors[level];
+      button.querySelector('.floor-label small').textContent = `FLOOR ${String(level).padStart(2, '0')}`
+        + (record ? ` · ${starText(record.stars)} · ${formatTime(record.bestMs)}` : '');
     }
   };
   const show = () => { render(); $('home-modal').hidden = true; document.body.classList.add('home-open'); };

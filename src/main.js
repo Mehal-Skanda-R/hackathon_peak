@@ -9,7 +9,10 @@ import { initHUD } from './ui/hud.js';
 import { initHome } from './ui/home.js';
 import { initAudio, playDoorVictory, toggleMute } from './ui/audio.js';
 import { initEndScreens } from './ui/endscreens.js';
-import { recordLevelComplete } from './ui/progress.js';
+import { recordLevelComplete, recordFloorResult, floorStars, starText, formatTime } from './ui/progress.js';
+import { initDanger } from './ui/danger.js';
+import { initHeartbeatSound, playHeartbeat } from './ui/heartbeatSound.js';
+import { initHints } from './ui/hints.js';
 import { LEVELS } from './game/config.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
 
@@ -39,8 +42,14 @@ class IntegrationScene extends Phaser.Scene {
 
         initSystems();
 
+        // Floor clock and "spotted" flag for the floor rating; reset per floor.
+        let floorMs = 0, floorSeconds = -1, spotted = false;
+        const resetFloorClock = () => { floorMs = 0; spotted = false; floorSeconds = 0; updateGameState({ floorSeconds: 0 }); };
+        resetFloorClock();
+
         museum.events.on('engine:ready', () => {
             initSystems();
+            resetFloorClock();
         });
 
         // Show the whole museum for two seconds whenever a round starts.
@@ -61,6 +70,13 @@ class IntegrationScene extends Phaser.Scene {
         });
         museum.events.on('engine:door', (s) => {
             visibilitySystem?.revealAll(3000, 400);
+            const stars = floorStars({ allCoins: s.levelCoins >= s.levelCoinTotal, spotted });
+            const record = recordFloorResult(s.level, { timeMs: floorMs, stars });
+            window.dispatchEvent(new CustomEvent('hud-notice', { detail: {
+                tone: 'cleared', ms: 3600,
+                text: `Floor ${String(s.level).padStart(2, '0')} cleared · ${starText(stars)} · ${formatTime(floorMs)}`
+                    + (record.newBest ? ' · best time!' : ''),
+            } }));
             // Between floors the door plays the victory sound; on the final floor
             // it is saved for the Heist Complete screen (engine:victory below).
             if (s.level < s.levelCount) playDoorVictory();
@@ -121,6 +137,8 @@ class IntegrationScene extends Phaser.Scene {
         museum.events.on('heartbeat:pulse', (pulse) => {
             if (getGameState().status === 'playing' && guardSystem) {
                 if (typeof guardSystem.handlePulse === 'function') guardSystem.handlePulse(pulse);
+                // Louder, higher thump the more the pulse grew above its base size.
+                playHeartbeat((pulse.radius - 100) / 160);
             }
         });
 
@@ -147,7 +165,15 @@ class IntegrationScene extends Phaser.Scene {
                 guardSystem.update(delta, state.player);
             }
             if (guardSystem) {
-                updateGameState({ guards: guardSystem.getStates() });
+                const guards = guardSystem.getStates();
+                if (state.status === 'playing' && guards.some(g => g.state === 'chase')) spotted = true;
+                updateGameState({ guards });
+            }
+            // The floor clock runs only while the thief can actually play.
+            if (state.status === 'playing' && !previewing) {
+                floorMs += delta;
+                const seconds = Math.floor(floorMs / 1000);
+                if (seconds !== floorSeconds) { floorSeconds = seconds; updateGameState({ floorSeconds }); }
             }
         });
 
@@ -206,6 +232,19 @@ class IntegrationScene extends Phaser.Scene {
             }
         });
 
+        // P or Esc pauses in place; pressing it again (or Space) resumes.
+        const PAUSED_BY_PLAYER = 'Game paused';
+        window.addEventListener('keydown', (event) => {
+            if (event.repeat || homeOpen() || !['p', 'P', 'Escape'].includes(event.key)) return;
+            const state = getGameState();
+            if (state.status === 'playing') museum.setPaused(true, PAUSED_BY_PLAYER);
+            else if (state.status === 'paused' && state.pauseReason === PAUSED_BY_PLAYER) {
+                window.dispatchEvent(new Event('hud-resume-clicked'));
+            }
+        });
+
+        initHints(museum);
+
         this.input.keyboard.on('keydown-SPACE', () => {
             if (homeOpen()) return;
             const { status } = getGameState();
@@ -235,7 +274,9 @@ const config = {
 initHUD();
 initHome();
 initEndScreens();
+initDanger();
 initAudio(); // after the HUD/home so their sound buttons get the saved mute state
+initHeartbeatSound();
 window.addEventListener('hud-toggle-sound', () => toggleMute());
 
 const game = new Phaser.Game(config);

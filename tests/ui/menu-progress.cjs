@@ -97,7 +97,8 @@ fs.mkdirSync(output, { recursive: true });
     const complete = await read();
     assert.equal(complete.count, '7 / 7'); assert.equal(complete.coins, '42');
     assert.equal(complete.locked, 0); assert.equal(complete.completed, 7);
-    assert.equal(complete.selected, '7'); assert.match(complete.enter, /floor 07/);
+    // A finished castle starts a new run from floor 1.
+    assert.equal(complete.selected, '1'); assert.match(complete.enter, /floor 01/);
     assert.equal(complete.bar, '7');
     await page.screenshot({ path: path.join(output, 'complete-home.png') });
     // Continuing a paused earlier floor must match its displayed action.

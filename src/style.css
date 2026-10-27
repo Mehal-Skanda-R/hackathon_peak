@@ -198,3 +198,14 @@ body.home-open #end-screen { display: none; }
   box-shadow: 0 0 2.2cqw #ff3b48aa, inset 0 0 1.4cqw #ff3b4844; }
 .end-btn:hover, .end-btn:focus-visible { filter: brightness(1.25); outline: none; }
 .end-btn.red:not(.primary-red):hover, .end-btn.red:not(.primary-red):focus-visible { border-color: #ff8a8a; box-shadow: 0 0 1.4cqw #ff3b4855; }
+
+/* Danger vignette (src/ui/danger.js) and floor 01 hints */
+#danger-vignette { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .35s;
+  box-shadow: inset 0 0 70px 18px #ffb13366; }
+#danger-vignette[data-level="suspicious"] { opacity: .7; }
+#danger-vignette[data-level="chase"] { opacity: 1; box-shadow: inset 0 0 90px 26px #ff3b4a88; animation: danger-pulse .8s ease-in-out infinite; }
+@keyframes danger-pulse { 50% { box-shadow: inset 0 0 60px 14px #ff3b4a55; } }
+@media (prefers-reduced-motion: reduce) { #danger-vignette[data-level="chase"] { animation: none; } }
+#door-notice.hint { border-color: #59dce688; background: #071a1ee6; color: #c9f4f7; }
+#door-notice.cleared { border-color: #f0d48a99; background: #17130be6; color: #f6e2a8; }
+#coin-chip .floor-time { font-size: 12px; color: #c9cdc3; letter-spacing: 1px; }

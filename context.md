@@ -943,3 +943,24 @@ purchase. Existing `tests/ui/menu-progress.cjs` also passed after updating its s
 campaign expectation to floor 1 (already implemented by Shyam). Movement-driven balance check
 is in progress. Actual Watch 7 sensing and online co-op are unverified. No medical or exact
 physical-beat claims. Code publication/PR and final handoff remain pending.
+
+## 11. Post-hackathon campaign polish — Shyam, 27 October 2026
+
+Branch `claude/tender-archimedes-f10i7c` (not merged to main yet). Campaign-only, presentation
+layer; no changes to engine, guard, pulse or sensor rules, and nothing in Soham's After Hours scope.
+- Heartbeat sound: a synthesized lub-dub (Web Audio, no file) on every pulse, louder/higher as the
+  pulse grows above its base size; follows the SOUND toggle (`src/ui/heartbeatSound.js`).
+- Danger vignette over the canvas: amber while a guard is suspicious, pulsing red during a chase
+  (`src/ui/danger.js`; no animation under prefers-reduced-motion).
+- P / Esc pauses in place ("Game paused"); P, Esc or Space resumes. Shown in the frame footer.
+- Floor clock (runs only while playing, not during the preview or pauses) shown under the coin chip.
+  Floor rating on the door: ★ cleared, ★ every coin, ★ never chased. Best stars and best time per
+  floor are kept in `hh-progress-v1` under `floors` (backward compatible) and shown on the home
+  floor cards; a "Floor NN cleared · ★★☆ · m:ss" notice plays during the door animation.
+- First-time hints on floor 01 (first pulse, first suspicious guard, first time hidden), once per
+  browser (`hh-hints-v1`), queued so they never overlap (`src/ui/hints.js`).
+- `hud-notice` now also takes `{ text, tone: 'hint' | 'cleared', ms }`; plain strings still work.
+- Tests: `npm test` 50 passed (+4 in `tests/ui/progress.test.js`, now in the npm script).
+  `tests/ui/menu-progress.cjs` updated to the floor-1 Continue after a finished castle (same as
+  Soham's local fix) and passes. Chromium checks: pause/resume and frozen clock, hints, amber→red
+  vignette, ★★★ result and home card, no page errors.
