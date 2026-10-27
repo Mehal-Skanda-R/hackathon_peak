@@ -143,6 +143,9 @@ export function initHUD() {
   const setClass = (el, cls) => { el.classList.remove('ok', 'warn', 'bad'); if (cls) el.classList.add(cls); };
 
   subscribeToGameState((state) => {
+    // After Hours has its own objective/status UI. The campaign snapshot stays
+    // alive while sleeping, but must not overwrite the active mission's labels.
+    if (document.body.classList.contains('after-hours-open')) return;
     $('menu-btn').disabled = state.status === 'transition';
     const sensor = state.sensor;
     const usable = isSensorUsable(sensor);

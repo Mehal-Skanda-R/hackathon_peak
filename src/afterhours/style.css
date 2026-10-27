@@ -1,0 +1,44 @@
+#ah-entry { position: fixed; left: 22px; bottom: 22px; z-index: 202; padding: 14px 22px; color: #f4e5c5; background: #172329; border: 1px solid #cfab70; letter-spacing: .16em; box-shadow: 0 6px 35px #000b; cursor: pointer; }
+#ah-entry span { display: block; font-size: 9px; color: #78dfd4; margin-bottom: 5px; letter-spacing: .2em; }
+#ah-entry b { padding-left: 20px; color: #e9b963; }
+#ah-ui { display: none; color: #e7eee6; font-family: system-ui, sans-serif; }
+.after-hours-open #ah-ui { display: block; }
+.after-hours-open .briefing, .after-hours-open #round-banner, .after-hours-open #coin-chip, .after-hours-open #door-notice, .after-hours-open #end-screen, .after-hours-open #danger-vignette { display: none !important; }
+.after-hours-open .layout { grid-template-columns: minmax(0, 1fr); max-width: 1120px; margin: auto; }
+.after-hours-open .page-heading { display: none; }
+.after-hours-open #museum-frame { scroll-margin: 20px; }
+#ah-ui [hidden] { display: none !important; }
+.ah-telemetry { display: grid; grid-template-columns: 1.2fr 1fr 1.6fr auto; align-items: center; gap: 16px; padding: 16px 20px; border-top: 1px solid #53615b; background: #0c1b23; }
+.ah-telemetry small { font-size: 10px; letter-spacing: .15em; color: #8bafa8; display: block; }
+.ah-telemetry strong { display: block; font-size: 17px; margin: 5px 0; }
+.ah-telemetry span { display: block; color: #a9b8b5; font-size: 12px; }
+.ah-telemetry progress { accent-color: #70d8c9; width: 100%; height: 4px; display: block; margin-top: 7px; }
+#ah-phase[data-phase="warning"] { color: #edbd76; }
+#ah-phase[data-phase="active"] { color: #ff8295; }
+#ah-ui button, #ah-ui select { font: inherit; color: #e7e8db; border: 1px solid #5b6b67; background: #14272c; border-radius: 3px; padding: 10px 14px; cursor: pointer; }
+#ah-ui button:hover:not(:disabled), #ah-ui select:hover { border-color: #e5bd79; background: #21363b; }
+#ah-ui button:focus-visible, #ah-ui select:focus-visible, #ah-entry:focus-visible { outline: 2px solid #77e5df; outline-offset: 3px; }
+#ah-ui button:disabled { opacity: .45; cursor: not-allowed; }
+#ah-director { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 20px; background: #241b29; font-size: 12px; }
+#ah-director b { font-size: 10px; letter-spacing: .12em; color: #d6bbeb; }
+#ah-budget { flex: 1; min-width: 190px; }
+#ah-toast { position: absolute; z-index: 15; bottom: 200px; left: 10%; right: 10%; padding: 12px 18px; color: #f1ddba; border: 1px solid #9a805a; background: #101b24ed; pointer-events: none; opacity: 0; transition: opacity .2s; font-size: 14px; }
+#ah-toast.show { opacity: 1; }
+.ah-dialog { position: fixed; inset: 0; z-index: 210; background: radial-gradient(ellipse at 75% 20%, #203c42ee, #050f16f9 70%); display: grid; place-items: center; padding: 24px; overflow: auto; }
+:fullscreen .ah-dialog { position: absolute; }
+.ah-dialog-content { width: min(740px, 100%); margin: auto; padding: 28px 34px; border-top: 2px solid #c9a46a; background: #0c1921; box-shadow: 0 20px 100px #0009; }
+#ah-ui h2 { font: 40px/1.12 Georgia, serif; color: #f5ead6; margin: 12px 0 16px; }
+.ah-eyebrow { font-size: 10px; letter-spacing: .2em; color: #dab578; margin: 0; }
+#ah-description { font-size: 15px; line-height: 1.65; color: #b8cbc7; margin-bottom: 22px; }
+.ah-briefing label { display: block; font-size: 10px; letter-spacing: .13em; color: #88aaa4; margin-top: 16px; }
+.ah-briefing select { display: block; width: 100%; margin-top: 6px; font-size: 15px !important; letter-spacing: 0; }
+.ah-briefing p { color: #b6c5c0; font-size: 13px; line-height: 1.6; margin-top: 8px; }
+.ah-market { display: flex; justify-content: space-between; align-items: center; gap: 14px; font-size: 13px; color: #e0bb7e; }
+.ah-instructions { font-size: 13px; color: #adbfba; line-height: 1.7; padding-left: 19px; border-top: 1px solid #36453e; padding-top: 14px; }
+.ah-instructions b { color: #e2d3b8; }
+#ah-result { color: #ecc886; font-size: 18px; line-height: 1.5; }
+#ah-sensor-status { color: #82c9bc; font-size: 12px; line-height: 1.5; }
+.ah-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+#ah-ui .ah-primary { color: #142029; background: #e1bc7e; border-color: #e1bc7e; font-weight: 700; }
+.ah-footnote { display: block; margin-top: 18px; color: #81958f; font-size: 11px; line-height: 1.6; }
+@media (max-width: 700px) { .ah-telemetry { grid-template-columns: 1fr 1fr; padding: 10px; gap: 10px; } .ah-dialog { padding: 12px; } .ah-dialog-content { padding: 20px; } #ah-ui h2 { font-size: 30px; } #ah-entry { left: 12px; bottom: 12px; padding: 10px 14px; } }
