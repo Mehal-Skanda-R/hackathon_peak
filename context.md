@@ -920,3 +920,16 @@ context commit verified on main (or publication pending/failed).
   TEST), R cancelling the door animation, R restarting the level behind the home screen,
   Continue after finishing all 7 floors (now floor 01), and a floor-01 coin drawn on the entrance.
   Full flow (home -> 7 floors -> Heist Complete -> home) played in Chromium with no page errors.
+
+## 10. Post-hackathon expansion — Soham, 27 October 2026
+
+Soham explicitly authorized implementing the accepted expansion ideas after the hackathon.
+This supersedes the MVP-only exclusion of replay/ghosts and additional modes for this work.
+Development is isolated on `feature/after-hours-expansion`; production/main remains unchanged.
+Plan: optional After Hours mission, one active Phaser scene/scheduler and the existing sensor
+facade, museum security rhythm, cursed return journey, bounded in-memory replay/ghost,
+safe authored room shifts, separate local equipment progression, and a local director mode.
+The original seven-floor campaign, saved progress and BLE contracts must remain compatible.
+Full online thief/hacker co-op and a second wearable are deferred until a networking design
+exists; do not advertise local director controls as online multiplayer or dual-wearable co-op.
+Implementation and test evidence are pending. No medical or exact physical-beat claims.
