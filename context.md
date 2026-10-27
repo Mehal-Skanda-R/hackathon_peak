@@ -933,21 +933,38 @@ Soham explicitly removed cinematic replay on 27 October: no replay viewer/timeli
 The original seven-floor campaign, saved progress and BLE contracts must remain compatible.
 Full online thief/hacker co-op and a second wearable are deferred until a networking design
 exists; do not advertise local director controls as online multiplayer or dual-wearable co-op.
-Local implementation milestone (not yet published/merged): `src/afterhours/` contains the
-mission scene, pure rules/geometry, ghost buffer, equipment profile, UI and code-drawn art.
-Campaign integration sleeps/wakes the original scene and gates its controls while the optional
-mission runs. `npm test`: 53 passed (46 existing + 7 expansion). Build passed. Chromium checks
-passed campaign preservation, physical wall shift, laser warning/capture, curse/extraction,
-reward-once, three retries/ghost disposal, one canvas, sensor-loss pause/recovery and equipment
-purchase. Existing `tests/ui/menu-progress.cjs` also passed after updating its stale completed-
-campaign expectation to floor 1 (already implemented by Shyam). Movement-driven balance check
-is in progress. Actual Watch 7 sensing and online co-op are unverified. No medical or exact
-physical-beat claims. Code publication/PR and final handoff remain pending.
+Published in [PR #9](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/9), branch
+`feature/after-hours-expansion`, code commit `4620eeae39abed01afedd6d475d676c745fd33bd`.
+Expansion code is not merged or deployed. It includes Shyam's campaign polish through
+`b333b98`; his audio, vignette, pause controls, clock/ratings, hints and lamp lighting are
+preserved. Campaign shortcuts are gated while sleeping. The PR adds an optional third
+argument `VisibilitySystem(scene, map, { lamps })` while retaining the existing default;
+After Hours supplies its own lamp coordinates and reuses the heartbeat sound/SOUND toggle.
+
+Files: `src/afterhours/` (scene, pure rules/geometry, bounded ghost buffer, equipment profile,
+UI/styles and procedural art), `tests/afterhours/`, `docs/AFTER_HOURS.md`, minimal integration
+in `src/main.js` and `src/ui/hud.js`, lamp override in `VisibilitySystem.js`, root test script
+and .gitignore. No new dependencies or lockfile changes. The seven-floor campaign sleeps/
+wakes intact; equipment/marks use `hh-after-hours-v1`, separate from campaign progress.
+
+Verification on the combined version: `npm test` 57 passed (50 including Shyam's progress
+tests + 7 expansion), `npm run build` and `git diff --check` passed. Chromium expansion and
+campaign menu/progress checks passed: player/wall collisions including a moved exhibit,
+all three curse pickups, warning-to-laser capture, director budget/keyboard controls,
+reward-once, equipment persistence, three retry/ghost/listener disposal cycles, one canvas,
+P/Esc campaign clock preservation, scene isolation and sensor-loss/recovery requiring explicit
+Resume. No page errors. A movement-driven steal-and-return completed on the combined build
+with both guards/lasers, a chase and four safe exhibit shifts active, without teleports or
+disabled capture. The controller allows bounded ordinary retries and records captures; it
+is not a deterministic human fun/balance study. Actual Watch 7 sensing, all equipment/curse
+balance and online co-op remain unverified. Commands/interfaces are in docs/AFTER_HOURS.md.
+No medical, stress-detection or exact physical-beat claims.
 
 ## 11. Post-hackathon campaign polish — Shyam, 27 October 2026
 
-Branch `claude/tender-archimedes-f10i7c` (not merged to main yet). Campaign-only, presentation
-layer; no changes to engine, guard, pulse or sensor rules, and nothing in Soham's After Hours scope.
+Shyam's changes are on `main` through `b333b98` (also on branch
+`claude/tender-archimedes-f10i7c`). Campaign presentation polish; no changes to engine, guard,
+pulse or sensor rules. Soham preserved this work when publishing the After Hours PR.
 - Heartbeat sound: a synthesized lub-dub (Web Audio, no file) on every pulse, louder/higher as the
   pulse grows above its base size; follows the SOUND toggle (`src/ui/heartbeatSound.js`).
 - Danger vignette over the canvas: amber while a guard is suspicious, pulsing red during a chase
