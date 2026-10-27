@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { LEVEL } from './config.js';
 
 const BRUSH_KEY = 'hh-reveal-gradient-v1';
 const BRUSH_RADIUS = 128;
@@ -38,6 +39,31 @@ function brushFalloff(f) {
   return 0;
 }
 
+// Warm halo for the wall lamps, drawn over the darkness so they still glow
+// softly when the room is dark. Additive tint only: it never erases the
+// darkness, so guards near a lamp stay hidden.
+const LAMP_KEY = 'hh-lamp-glow-v1';
+const LAMP_TEXTURE_RADIUS = 64;
+
+function lampGlowTexture(scene) {
+  if (!scene.textures.exists(LAMP_KEY)) {
+    const size = LAMP_TEXTURE_RADIUS * 2;
+    const canvas = scene.textures.createCanvas(LAMP_KEY, size, size);
+    const ctx = canvas.context;
+    const r = LAMP_TEXTURE_RADIUS;
+    const gradient = ctx.createRadialGradient(r, r, 0, r, r, r);
+    gradient.addColorStop(0, 'rgba(255,196,110,1)');
+    gradient.addColorStop(0.25, 'rgba(240,150,60,.55)');
+    gradient.addColorStop(0.6, 'rgba(200,110,40,.18)');
+    gradient.addColorStop(1, 'rgba(200,110,40,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    canvas.refresh();
+    canvas.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  }
+  return LAMP_KEY;
+}
+
 // Constant dim vision around the thief: 120% of the 100 px base pulse radius,
 // showing the map very faintly. Guards are not shown by it (see revealAt).
 export const AMBIENT_RADIUS = 120;
@@ -54,6 +80,16 @@ export default class VisibilitySystem {
       .setOrigin(0, 0)
       .setDepth(50);
     this.brush = this.scene.make.image({ x: 0, y: 0, key: revealBrush(scene), add: false });
+
+    // One soft pool and one small bright core per lamp, each breathing slowly
+    // on its own phase so the room does not pulse in unison.
+    const glowKey = lampGlowTexture(scene);
+    this.lampGlows = (LEVEL.decor?.lamps ?? []).flatMap(([x, y], i) => [
+      { image: scene.add.image(x + 5, y + 10, glowKey).setScale(58 / LAMP_TEXTURE_RADIUS), base: 0.16, phase: i * 1.7 },
+      { image: scene.add.image(x, y, glowKey).setScale(16 / LAMP_TEXTURE_RADIUS), base: 0.55, phase: i * 1.7 },
+    ]);
+    for (const glow of this.lampGlows) glow.image.setDepth(50.5).setBlendMode(Phaser.BlendModes.ADD);
+    this.lampTime = 0;
 
     this.activePulses = [];
     this.preview = null;
@@ -87,6 +123,13 @@ export default class VisibilitySystem {
 
     this.overlay.clear();
     this.overlay.fill(0x000000, 0.98); // almost pitch black
+
+    // Lamps glow only as much as the room is dark (not over the full-map preview).
+    this.lampTime += deltaMs;
+    for (const glow of this.lampGlows) {
+      const breath = 0.8 + 0.2 * Math.sin(this.lampTime / 900 + glow.phase);
+      glow.image.setAlpha(glow.base * breath * this.overlay.alpha);
+    }
 
     // Non-pulsing dim vision that follows the thief.
     const me = this.scene.getPlayerState?.();
@@ -136,5 +179,6 @@ export default class VisibilitySystem {
     this.scene.events.off('heartbeat:pulse', this.handlePulse, this);
     this.overlay.destroy();
     this.brush.destroy();
+    for (const glow of this.lampGlows) glow.image.destroy();
   }
 }
