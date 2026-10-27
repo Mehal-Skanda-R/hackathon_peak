@@ -959,9 +959,9 @@ layer; no changes to engine, guard, pulse or sensor rules, and nothing in Soham'
   floor cards; a "Floor NN cleared · ★★☆ · m:ss" notice plays during the door animation.
 - First-time hints on floor 01 (first pulse, first suspicious guard, first time hidden), once per
   browser (`hh-hints-v1`), queued so they never overlap (`src/ui/hints.js`).
-- Wall lamps glow softly in the dark: an additive warm halo per lamp above the darkness, breathing
-  slowly, scaled by the darkness alpha. Tint only, it never erases darkness, so guards near lamps
-  stay hidden (`revealAt` unchanged) (`src/game/VisibilitySystem.js`).
+- Wall lamps light a small patch of the room: a soft dim hole in the darkness (78 px, 34%, like
+  the thief's ambient circle) plus a warm, slowly breathing additive halo. Map only: lamp light is
+  excluded from `revealAt`, so guards stay invisible in it (`src/game/VisibilitySystem.js`).
 - `hud-notice` now also takes `{ text, tone: 'hint' | 'cleared', ms }`; plain strings still work.
 - Tests: `npm test` 50 passed (+4 in `tests/ui/progress.test.js`, now in the npm script).
   `tests/ui/menu-progress.cjs` updated to the floor-1 Continue after a finished castle (same as

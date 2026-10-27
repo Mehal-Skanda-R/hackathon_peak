@@ -39,11 +39,13 @@ function brushFalloff(f) {
   return 0;
 }
 
-// Warm halo for the wall lamps, drawn over the darkness so they still glow
-// softly when the room is dark. Additive tint only: it never erases the
-// darkness, so guards near a lamp stay hidden.
+// Wall lamps light a small patch of the room around them: a soft dim hole
+// in the darkness (map only, like the thief's ambient circle, so guards are
+// not shown by it: see revealAt) plus a warm additive halo over it.
 const LAMP_KEY = 'hh-lamp-glow-v1';
 const LAMP_TEXTURE_RADIUS = 64;
+const LAMP_LIGHT_RADIUS = 78;
+const LAMP_LIGHT_STRENGTH = 0.34;
 
 function lampGlowTexture(scene) {
   if (!scene.textures.exists(LAMP_KEY)) {
@@ -84,6 +86,7 @@ export default class VisibilitySystem {
     // One soft pool and one small bright core per lamp, each breathing slowly
     // on its own phase so the room does not pulse in unison.
     const glowKey = lampGlowTexture(scene);
+    this.lamps = (LEVEL.decor?.lamps ?? []).map(([x, y], i) => ({ x: x + 5, y: y + 10, phase: i * 1.7 }));
     this.lampGlows = (LEVEL.decor?.lamps ?? []).flatMap(([x, y], i) => [
       { image: scene.add.image(x + 5, y + 10, glowKey).setScale(58 / LAMP_TEXTURE_RADIUS), base: 0.16, phase: i * 1.7 },
       { image: scene.add.image(x, y, glowKey).setScale(16 / LAMP_TEXTURE_RADIUS), base: 0.55, phase: i * 1.7 },
@@ -126,9 +129,12 @@ export default class VisibilitySystem {
 
     // Lamps glow only as much as the room is dark (not over the full-map preview).
     this.lampTime += deltaMs;
-    for (const glow of this.lampGlows) {
-      const breath = 0.8 + 0.2 * Math.sin(this.lampTime / 900 + glow.phase);
-      glow.image.setAlpha(glow.base * breath * this.overlay.alpha);
+    const breath = phase => 0.8 + 0.2 * Math.sin(this.lampTime / 900 + phase);
+    for (const glow of this.lampGlows) glow.image.setAlpha(glow.base * breath(glow.phase) * this.overlay.alpha);
+    this.brush.setScale(LAMP_LIGHT_RADIUS / BRUSH_RADIUS);
+    for (const lamp of this.lamps) {
+      this.brush.setPosition(lamp.x, lamp.y).setAlpha(LAMP_LIGHT_STRENGTH * (0.9 + 0.1 * Math.sin(this.lampTime / 900 + lamp.phase)));
+      this.overlay.erase(this.brush);
     }
 
     // Non-pulsing dim vision that follows the thief.
