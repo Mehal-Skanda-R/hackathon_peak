@@ -926,10 +926,20 @@ context commit verified on main (or publication pending/failed).
 Soham explicitly authorized implementing the accepted expansion ideas after the hackathon.
 This supersedes the MVP-only exclusion of replay/ghosts and additional modes for this work.
 Development is isolated on `feature/after-hours-expansion`; production/main remains unchanged.
-Plan: optional After Hours mission, one active Phaser scene/scheduler and the existing sensor
-facade, museum security rhythm, cursed return journey, bounded in-memory replay/ghost,
-safe authored room shifts, separate local equipment progression, and a local director mode.
+Scope: optional After Hours mission, one active Phaser scene/scheduler and the existing sensor
+facade, museum security rhythm, cursed return journey, bounded in-memory ghost positions/pulses,
+safe authored exhibit shifts, separate local equipment progression, and a local director mode.
+Soham explicitly removed cinematic replay on 27 October: no replay viewer/timeline or BPM history.
 The original seven-floor campaign, saved progress and BLE contracts must remain compatible.
 Full online thief/hacker co-op and a second wearable are deferred until a networking design
 exists; do not advertise local director controls as online multiplayer or dual-wearable co-op.
-Implementation and test evidence are pending. No medical or exact physical-beat claims.
+Local implementation milestone (not yet published/merged): `src/afterhours/` contains the
+mission scene, pure rules/geometry, ghost buffer, equipment profile, UI and code-drawn art.
+Campaign integration sleeps/wakes the original scene and gates its controls while the optional
+mission runs. `npm test`: 53 passed (46 existing + 7 expansion). Build passed. Chromium checks
+passed campaign preservation, physical wall shift, laser warning/capture, curse/extraction,
+reward-once, three retries/ghost disposal, one canvas, sensor-loss pause/recovery and equipment
+purchase. Existing `tests/ui/menu-progress.cjs` also passed after updating its stale completed-
+campaign expectation to floor 1 (already implemented by Shyam). Movement-driven balance check
+is in progress. Actual Watch 7 sensing and online co-op are unverified. No medical or exact
+physical-beat claims. Code publication/PR and final handoff remain pending.
