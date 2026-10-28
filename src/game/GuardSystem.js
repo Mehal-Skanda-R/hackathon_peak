@@ -1,8 +1,9 @@
-// Owns the two guards, pulse handling, caught reporting and guard visuals.
-// Never creates the map, controls the player or opens Bluetooth.
+// Owns the guards (and the Warden), pulse handling, caught reporting and guard
+// visuals. Never creates the map, controls the player or opens Bluetooth.
 import Guard, { GUARD_TUNING } from './Guard.js';
+import Warden from './Warden.js';
 
-export const GUARD_EVENTS = Object.freeze({ CAUGHT: 'guards:caught' });
+export const GUARD_EVENTS = Object.freeze({ CAUGHT: 'guards:caught', WARDEN: 'guards:warden' });
 
 const tile = (column, row, tileSize) => Object.freeze({
   x: (column + 0.5) * tileSize, y: (row + 0.5) * tileSize,
@@ -50,12 +51,49 @@ export const GUARD_ROUTES_BY_LEVEL = Object.freeze({
     'guard-east': [[18, 6], [22, 6], [22, 9], [18, 9]],
     'guard-door': [[6, 14], [18, 14], [18, 15], [6, 15]],     // the crystal and door
   }),
+  'bone-stair': Object.freeze({
+    'guard-crypt': [[6, 6], [14, 6], [14, 8], [6, 8]],
+    'guard-east': [[19, 1], [23, 1], [23, 5], [19, 5]],
+    'guard-south': [[11, 14], [17, 14]],
+  }),
+  ossuary: Object.freeze({
+    'guard-north': [[8, 1], [17, 1], [17, 3], [8, 3]],
+    'guard-middle': [[5, 9], [17, 9], [19, 11], [3, 11]],
+    'guard-south': [[2, 14], [16, 15], [23, 15], [16, 13]],
+  }),
+  'heart-shrine': Object.freeze({
+    'guard-west': [[1, 6], [7, 6], [7, 9], [1, 9]],
+    'guard-east': [[17, 6], [23, 6], [23, 9], [17, 9]],
+    'guard-south': [[6, 14], [15, 14], [15, 15], [6, 15]],
+  }),
+});
+
+// Guard kinds per level (Guard.js); unlisted guards are watchmen.
+export const GUARD_KINDS_BY_LEVEL = Object.freeze({
+  'west-wing': Object.freeze({ 'guard-hall': 'sleeper' }),
+  archive: Object.freeze({ 'guard-east': 'hound' }),
+  'vault-ring': Object.freeze({ 'guard-outer': 'lantern' }),
+  'royal-exhibit': Object.freeze({ 'guard-north': 'sleeper', 'guard-south': 'lantern' }),
+  'bone-stair': Object.freeze({ 'guard-crypt': 'hound', 'guard-east': 'lantern', 'guard-south': 'sleeper' }),
+  ossuary: Object.freeze({ 'guard-north': 'lantern', 'guard-south': 'hound' }),
+  'heart-shrine': Object.freeze({ 'guard-west': 'lantern', 'guard-east': 'lantern', 'guard-south': 'hound' }),
+});
+
+// The Warden (Warden.js), in tiles. Floor 07: asleep in his office until the
+// Heart is taken, back there for good after The Inspection. Act III's shrine:
+// hunting from the start, resting after each Inspection, freed by the shrine.
+export const WARDEN_BY_LEVEL = Object.freeze({
+  'final-heist': Object.freeze({ post: [13, 4], dormant: true, after: 'dormant' }),
+  'heart-shrine': Object.freeze({ post: [12, 9], dormant: false, after: 'rest' }),
 });
 
 // Suspicion bar colour and the icon above the guard's head, per state.
 const STATE_COLORS = Object.freeze({
-  patrol: 0xffd84a, suspicious: 0xffa133, chase: 0xff4d5e, return: 0xffd84a,
+  patrol: 0xffd84a, suspicious: 0xffa133, chase: 0xff4d5e, return: 0xffd84a, asleep: 0x9db8ff,
+  dormant: 0x6b5a5a, hunt: 0xff4d5e, search: 0xff8a5e, inspect: 0xffffff, rest: 0x6b5a5a, freed: 0xf0d48a,
 });
+// Body tint per guard kind, so each reads differently at a glance.
+const KIND_TINT = Object.freeze({ hound: 0xff9a70, sleeper: 0xaec4ff });
 // '?' colour by suspicion: yellow (low) -> orange -> red (chase level), so a guard
 // that lost a hidden player visibly cools down red -> yellow -> no icon.
 const ICON_STEPS = 12;
@@ -68,6 +106,11 @@ function suspicionColor(suspicion) {
   return (r << 16) | (g << 8) | b;
 }
 function guardIcon(guard) {
+  if (guard.kind === 'warden') {
+    const text = { hunt: '!', search: '?', inspect: '…' }[guard.state] ?? '';
+    return { text, color: STATE_COLORS[guard.state] ?? STATE_COLORS.hunt };
+  }
+  if (guard.state === 'asleep') return { text: 'z', color: STATE_COLORS.asleep };
   if (guard.state === 'chase') return { text: '!', color: STATE_COLORS.chase };
   const alerted = guard.state === 'suspicious' || guard.state === 'return' || guard.calmRate;
   if (!alerted || guard.suspicion < 0.01) return { text: '', color: STATE_COLORS.patrol };
@@ -128,9 +171,76 @@ export function guardSpriteTexture(scene, facing, stride) {
   return key;
 }
 
+// The Warden: a tall, blind keeper in a crimson coat with a brass ear trumpet.
+export function wardenSpriteTexture(scene, facing, stride) {
+  const key = `hh-warden-v1-${facing}-${stride}`;
+  if (scene.textures.exists(key)) return key;
+  const canvas = scene.textures.createCanvas(key, SPRITE_SIZE, SPRITE_SIZE);
+  const ctx = canvas.context;
+  ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.beginPath(); ctx.ellipse(21, 33, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); if (facing === 'left') { ctx.translate(40, 0); ctx.scale(-1, 1); }
+  ctx.fillStyle = '#1a0b0b';
+  ctx.fillRect(15 + stride * 2, 29, 4, 5 - stride); ctx.fillRect(22 - stride * 2, 29, 4, 4 + stride);
+  // long coat
+  ctx.fillStyle = '#5c1620';
+  ctx.beginPath(); ctx.moveTo(15, 12); ctx.lineTo(25, 12); ctx.lineTo(30, 31); ctx.lineTo(10, 31); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#b8434a'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#2b0a0f'; ctx.fillRect(19, 13, 2, 17);
+  ctx.fillStyle = '#d9b672'; ctx.fillRect(16, 16, 2, 2); ctx.fillRect(16, 21, 2, 2);
+  // head: grey hair, closed eyes
+  ctx.fillStyle = '#c9b9a3'; ctx.beginPath(); ctx.ellipse(20, 8, 7, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8e2d6'; ctx.beginPath(); ctx.ellipse(20, 4, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+  if (facing !== 'up') {
+    ctx.strokeStyle = '#3b2420'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(facing === 'down' ? 16 : 21, 9); ctx.lineTo(facing === 'down' ? 19 : 24, 9);
+    ctx.moveTo(facing === 'down' ? 21 : 26, 9); ctx.lineTo(facing === 'down' ? 24 : 28, 9); ctx.stroke();
+  }
+  // brass ear trumpet held up to the head
+  ctx.strokeStyle = '#2b0a0f'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(26, 15); ctx.lineTo(28, 10); ctx.stroke();
+  ctx.fillStyle = '#d8a845';
+  ctx.beginPath(); ctx.moveTo(27, 9); ctx.lineTo(35, 4); ctx.lineTo(36, 12); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#fff0b0'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.restore();
+  canvas.refresh();
+  return key;
+}
+
+// Small hand lantern carried by lantern-bearers (drawn above the darkness).
+function lanternTexture(scene) {
+  const key = 'hh-guard-lantern-v1';
+  if (scene.textures.exists(key)) return key;
+  const canvas = scene.textures.createCanvas(key, 16, 16);
+  const ctx = canvas.context;
+  const glow = ctx.createRadialGradient(8, 9, 0, 8, 9, 8);
+  glow.addColorStop(0, 'rgba(255,214,120,.9)'); glow.addColorStop(1, 'rgba(255,170,60,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, 16, 16);
+  ctx.fillStyle = '#3b2c06'; ctx.fillRect(5, 3, 6, 2); ctx.fillRect(5, 13, 6, 1);
+  ctx.fillStyle = '#ffe9a8'; ctx.fillRect(6, 6, 4, 6);
+  canvas.refresh();
+  return key;
+}
+
+// Two faint red eyes: the Warden is always felt, even in the dark.
+function wardenEyesTexture(scene) {
+  const key = 'hh-warden-eyes-v1';
+  if (scene.textures.exists(key)) return key;
+  const canvas = scene.textures.createCanvas(key, 16, 8);
+  const ctx = canvas.context;
+  for (const x of [4, 12]) {
+    const glow = ctx.createRadialGradient(x, 4, 0, x, 4, 4);
+    glow.addColorStop(0, 'rgba(255,90,80,.95)'); glow.addColorStop(1, 'rgba(255,40,40,0)');
+    ctx.fillStyle = glow; ctx.fillRect(x - 4, 0, 8, 8);
+  }
+  canvas.refresh();
+  return key;
+}
+
 export default class GuardSystem {
   constructor(scene, mapGeometry, {
     routes = GUARD_ROUTES_BY_LEVEL[mapGeometry.levelId] ?? GUARD_ROUTES, tuning = {},
+    kinds = GUARD_KINDS_BY_LEVEL[mapGeometry.levelId] ?? {},
+    warden = WARDEN_BY_LEVEL[mapGeometry.levelId] ?? null,
   } = {}) {
     this.scene = scene;
     this.map = mapGeometry;
@@ -138,9 +248,15 @@ export default class GuardSystem {
     const canOccupy = (x, y, w, h) => scene.canOccupy(x, y, w, h);
     const hasLineOfSight = (from, to) => scene.hasLineOfSight(from, to);
     this.guards = Object.entries(routes).map(([id, waypoints]) => new Guard({
-      id, map: mapGeometry, tuning: this.tuning, canOccupy, hasLineOfSight,
+      id, map: mapGeometry, tuning: this.tuning, canOccupy, hasLineOfSight, kind: kinds[id] ?? 'watchman',
       route: waypoints.map(([column, row]) => tile(column, row, mapGeometry.tileSize)),
     }));
+    this.warden = warden ? new Warden({
+      id: 'warden', map: mapGeometry, canOccupy, hasLineOfSight,
+      post: tile(...warden.post, mapGeometry.tileSize), dormant: warden.dormant, after: warden.after,
+      coverZones: mapGeometry.hidingZones ?? [],
+    }) : null;
+    if (this.warden) this.guards.push(this.warden);
     this.processedPulseIds = new Set();
     this.views = new Map();
     this.destroyed = false;
@@ -159,6 +275,29 @@ export default class GuardSystem {
         this.scene.events.emit(GUARD_EVENTS.CAUGHT, { guardId: guard.id });
       }
     }
+    this.emitWardenEvents();
+    this.syncViews();
+  }
+
+  emitWardenEvents() {
+    for (const type of this.warden?.takeEvents() ?? []) {
+      this.scene.events.emit(GUARD_EVENTS.WARDEN, { type, warden: this.warden.getState() });
+    }
+  }
+
+  // Lantern-bearers' lights, for the visibility layer (map only).
+  lights() {
+    return this.guards.filter(g => g.tuning.lightRadius).map(g => ({ x: g.x, y: g.y, radius: g.tuning.lightRadius }));
+  }
+
+  // Story hook: point a distraction (e.g. a rival's noise) at the guards as a pulse.
+  // Sleepers and the Warden ignore it; ordinary guards investigate.
+  handleNoise(noise) {
+    if (this.destroyed || !this.isPlaying()) return;
+    for (const guard of this.guards) {
+      if (guard.kind === 'warden' || guard.state === 'asleep') continue;
+      guard.handlePulse({ hidingAtEmission: false, delta: 0, ...noise });
+    }
     this.syncViews();
   }
 
@@ -167,6 +306,7 @@ export default class GuardSystem {
     if (this.destroyed || !this.isPlaying() || this.processedPulseIds.has(pulse.id)) return;
     this.processedPulseIds.add(pulse.id);
     for (const guard of this.guards) guard.handlePulse(pulse);
+    this.emitWardenEvents();
     this.syncViews();
   }
 
@@ -186,6 +326,7 @@ export default class GuardSystem {
     this.scene.events.off?.('shutdown', this.onShutdown);
     for (const view of this.views.values()) {
       for (const part of this.viewParts(view)) if (part?.scene) part.destroy();
+      if (view.glow?.scene) view.glow.destroy();
     }
     this.views.clear();
     this.processedPulseIds.clear();
@@ -199,8 +340,14 @@ export default class GuardSystem {
   createViews() {
     if (!this.scene.add?.image || !this.scene.textures) return; // headless tests
     for (const guard of this.guards) {
+      const texture = guard.kind === 'warden' ? wardenSpriteTexture : guardSpriteTexture;
+      // Above the darkness: a lantern's flame, or the Warden's eyes.
+      const glowKey = guard.kind === 'warden' ? wardenEyesTexture(this.scene)
+        : guard.tuning.lightRadius ? lanternTexture(this.scene) : null;
       this.views.set(guard.id, {
-        body: this.scene.add.image(guard.x, guard.y, guardSpriteTexture(this.scene, 'down', 0)).setDepth(9),
+        paint: texture,
+        glow: glowKey ? this.scene.add.image(guard.x, guard.y, glowKey).setDepth(52) : null,
+        body: this.scene.add.image(guard.x, guard.y, texture(this.scene, 'down', 0)).setDepth(9),
         meter: this.scene.add.rectangle(guard.x - 10, guard.y - 24, 0, 3, STATE_COLORS.patrol)
           .setOrigin(0, 0.5).setDepth(9),
         icon: this.scene.add.text(guard.x, guard.y - 34, '', {
@@ -209,6 +356,7 @@ export default class GuardSystem {
         }).setOrigin(0.5).setDepth(9),
         lastX: guard.x, lastY: guard.y, facing: 'down', walked: 0,
       });
+      if (KIND_TINT[guard.kind]) this.views.get(guard.id).body.setTint(KIND_TINT[guard.kind]);
     }
     this.syncViews();
   }
@@ -238,8 +386,16 @@ export default class GuardSystem {
       const stride = moved > 0.01 ? Math.floor(view.walked / STRIDE_PX) % 2 : 0;
       view.lastX = guard.x; view.lastY = guard.y;
       view.body.setPosition(guard.x, guard.y);
-      const texture = guardSpriteTexture(this.scene, view.facing, stride);
+      const texture = view.paint(this.scene, view.facing, stride);
       if (texture !== view.texture) { view.body.setTexture(texture); view.texture = texture; }
+      if (view.glow?.scene) {
+        if (guard.kind === 'warden') {
+          view.glow.setPosition(guard.x, guard.y - 13)
+            .setAlpha(guard.state === 'dormant' || guard.state === 'freed' ? 0 : 0.75);
+        } else {
+          view.glow.setPosition(guard.x + (view.facing === 'left' ? -12 : 12), guard.y + 4);
+        }
+      }
       view.meter.setPosition(guard.x - 10, guard.y - 24).setSize(20 * guard.suspicion, 3);
       view.icon.setPosition(guard.x, guard.y - 34);
       const alpha = this.visibilityProbe ? this.visibilityProbe(guard.x, guard.y) : 1;

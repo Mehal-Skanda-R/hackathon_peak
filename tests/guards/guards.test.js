@@ -288,7 +288,9 @@ test('reset restores spawn, clears suspicion and processed pulse ids; destroy is
 test('state snapshots are frozen and match the contract shape', () => {
   const [s] = new GuardSystem(fakeScene(), MAP_GEOMETRY).getStates();
   assert.ok(Object.isFrozen(s));
-  assert.deepEqual(Object.keys(s).sort(), ['id', 'state', 'suspicion', 'x', 'y']);
+  // id/x/y/state/suspicion are the original contract; kind and lightRadius are additive.
+  assert.deepEqual(Object.keys(s).sort(), ['id', 'kind', 'lightRadius', 'state', 'suspicion', 'x', 'y']);
+  assert.equal(s.kind, 'watchman');
 });
 
 // Canvas 2D stand-in: every drawing call is a no-op.

@@ -9,8 +9,9 @@ export function initDanger() {
   document.getElementById('game-container').appendChild(vignette);
   subscribeToGameState(state => {
     const guards = state.status === 'playing' ? (state.guards ?? []) : [];
-    const level = guards.some(g => g.state === 'chase') ? 'chase'
-      : guards.some(g => g.state === 'suspicious') ? 'suspicious' : '';
+    // The Warden hunting or searching is a constant amber threat; inspecting is red.
+    const level = guards.some(g => g.state === 'chase' || g.state === 'inspect') ? 'chase'
+      : guards.some(g => ['suspicious', 'hunt', 'search'].includes(g.state)) ? 'suspicious' : '';
     if (vignette.dataset.level !== level) vignette.dataset.level = level;
   });
 }

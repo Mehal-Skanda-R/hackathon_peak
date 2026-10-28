@@ -1,6 +1,7 @@
-import { LEVELS } from '../game/config.js';
+import { ACTS } from '../game/config.js';
 import { subscribeToGameState } from '../game/GameState.js';
-import { loadProgress } from './progress.js';
+import { loadProgress, catacombProgress } from './progress.js';
+import { ENDINGS } from '../story/script.js';
 
 // Full-screen "Mission failed" (caught) and "Heist complete" (final victory)
 // screens. The team's artwork is the backdrop, with its stat boxes and buttons
@@ -28,6 +29,7 @@ export function initEndScreens() {
   el.innerHTML = `
     <div class="end-art end-victory" id="end-victory" aria-label="Heist complete">
       <img src="/assets/screens/heist-complete.webp" alt="Heist complete. You conquered the castle." draggable="false">
+      <div class="end-ending" id="end-v-ending" style="${box([470, 416, 1130, 460])}"></div>
       <div class="end-stats gold" style="${box([242, 474, 1358, 668])}">
         ${stat('tower', 'ivory', 'LEVELS FINISHED', 'end-v-levels')}
         ${stat('skull', 'red', 'TOTAL DEATHS', 'end-v-deaths')}
@@ -44,7 +46,7 @@ export function initEndScreens() {
       </div>
       <button class="end-btn red primary-red" id="end-f-replay" style="${box([543, 578, 1057, 662])}">${ICONS.replay}<span>REPLAY LEVEL</span></button>
       <button class="end-btn red" id="end-f-home" style="${box([409, 692, 718, 765])}">${ICONS.home}<span>HOME</span></button>
-      <button class="end-btn red" id="end-f-restart" style="${box([753, 692, 1190, 765])}">${ICONS.forward}<span>RESTART FROM LEVEL 1</span></button>
+      <button class="end-btn red" id="end-f-restart" style="${box([753, 692, 1190, 765])}">${ICONS.forward}<span id="end-f-restart-label">RESTART FROM LEVEL 1</span></button>
     </div>
   `;
   document.body.appendChild(el);
@@ -60,17 +62,27 @@ export function initEndScreens() {
     const failed = state.status === 'caught';
     const won = state.status === 'victory';
     el.classList.toggle('show', failed || won);
+    // The end screen lives outside the full-screen museum frame: leave full screen to show it.
+    if ((failed || won) && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     $('end-failed').hidden = !failed;
     $('end-victory').hidden = !won;
     const deaths = state.runDeaths ?? 0;
     const coins = (state.coins ?? 0).toLocaleString();
     if (failed) {
-      $('end-f-level').textContent = pad(state.level ?? 1);
+      // Act III counts depths: "03" and "Restart from depth 1".
+      $('end-f-level').textContent = pad(state.actFloor ?? state.level ?? 1);
+      $('end-f-restart-label').textContent = state.actUnit === 'DEPTH' ? 'RESTART FROM DEPTH 1' : 'RESTART FROM LEVEL 1';
       $('end-f-deaths').textContent = pad(deaths);
       $('end-f-coins').textContent = coins;
     }
     if (won) {
-      $('end-v-levels').textContent = `${Math.max(loadProgress().completed, state.level ?? 0)} / ${LEVELS.length}`;
+      const act = ACTS.find(a => a.id === state.act) ?? ACTS[0];
+      const floors = act.last - act.first + 1;
+      const done = act.id === 1 ? Math.max(loadProgress().completed, state.level ?? 0) : catacombProgress().completed;
+      $('end-v-levels').textContent = `${Math.min(done, floors)} / ${floors}`;
+      const ending = ENDINGS[state.ending];
+      $('end-v-ending').textContent = ending ? `ENDING · ${ending.title.toUpperCase()}${state.ending === 'last' ? ' · THE TRUE ENDING' : ''}` : '';
+      $('end-v-ending').hidden = !ending;
       $('end-v-deaths').textContent = deaths;
       $('end-v-coins').textContent = coins;
     }

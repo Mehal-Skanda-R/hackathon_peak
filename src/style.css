@@ -209,3 +209,82 @@ body.home-open #end-screen { display: none; }
 #door-notice.hint { border-color: #59dce688; background: #071a1ee6; color: #c9f4f7; }
 #door-notice.cleared { border-color: #f0d48a99; background: #17130be6; color: #f6e2a8; }
 #coin-chip .floor-time { font-size: 12px; color: #c9cdc3; letter-spacing: 1px; }
+
+/* ---- Story layer (src/story) ---- */
+.legend-icon.warden { color: #ff6b5e; } .legend-icon.rival { color: #ff5d6c; }
+
+/* Radio: who is speaking, top left over the canvas */
+#radio { --radio-color: #59dce6; position: absolute; top: 12px; left: 14px; z-index: 4; max-width: min(430px, 62%); display: flex; flex-direction: column; gap: 4px;
+  padding: 9px 13px; border: 1px solid color-mix(in srgb, var(--radio-color) 55%, transparent); border-radius: 6px; background: #050b0ee8;
+  box-shadow: 0 8px 24px #0009; opacity: 0; transform: translateY(-6px); transition: opacity .2s, transform .2s; pointer-events: none; }
+#radio.show { opacity: 1; transform: translateY(0); }
+.radio-who { display: flex; align-items: center; gap: 7px; font-size: 10px; letter-spacing: 1.8px; color: var(--radio-color); }
+.radio-who i { width: 7px; height: 7px; border-radius: 50%; background: var(--radio-color); box-shadow: 0 0 8px var(--radio-color); animation: radio-blink 1s steps(2) infinite; }
+.radio-who small { color: #8fa3a4; letter-spacing: .5px; font-size: 10px; text-transform: none; }
+.radio-text { color: #e6ecdf; font-size: 13px; line-height: 1.45; min-height: 1.45em; }
+@keyframes radio-blink { 50% { opacity: .25; } }
+
+/* Heart Lock / Inspection panel, bottom centre over the canvas */
+#story-panel { position: absolute; left: 50%; bottom: 22%; z-index: 4; transform: translateX(-50%); width: min(380px, 80%); display: none;
+  flex-direction: column; gap: 6px; padding: 11px 15px; border: 1px solid #f0d48a88; border-radius: 8px; background: #0a0d0cee; color: #e8e2cc; font-size: 12px; line-height: 1.45; }
+#story-panel.show { display: flex; }
+#story-panel b { color: #f6e2a8; }
+#story-panel small { color: #a7b1aa; display: flex; align-items: center; gap: 8px; }
+.story-panel-title { font-size: 11px; letter-spacing: 2.2px; }
+.story-panel-title.danger { color: #ff8a7a !important; }
+#story-panel .loud { color: #ff6b77; } #story-panel .quiet { color: #8ff0c4; }
+.story-bar { display: block; flex: 1; height: 6px; border: 1px solid #f0d48a66; border-radius: 3px; overflow: hidden; }
+.story-bar i { display: block; height: 100%; background: #e8be68; transition: width .2s; }
+.story-bar.calm i { background: #8ff0c4; } .story-bar.slow i { background: #8fa3c4; }
+
+/* Intel shop on a floor's ready screen */
+#intel-row { display: none; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; max-width: 520px; }
+#intel-row .intel-title { width: 100%; font-size: 10px; letter-spacing: 1.8px; color: #a9b9b4; }
+#intel-row .intel-title b { color: #f6c94f; }
+.intel-btn { padding: 7px 11px; border: 1px solid #f0d48a66; border-radius: 4px; background: #14130c; color: #f0e2bc; font-size: 11px; cursor: pointer; }
+.intel-btn small { margin-left: 6px; color: #f6c94f; font-weight: 700; }
+.intel-btn:hover:not(:disabled) { border-color: #f0d48a; background: #221e10; }
+.intel-btn:disabled { opacity: .45; cursor: not-allowed; }
+.intel-btn.owned { opacity: .8; border-color: #8ff0c488; } .intel-btn.owned small { color: #8ff0c4; }
+
+/* Cutscene cards (src/story/cards.js) */
+#story-card { display: none; position: fixed; inset: 0; z-index: 300; align-items: center; justify-content: center; padding: 16px; background: #020304f2; }
+#story-card.show { display: flex; }
+.story-card-inner { width: min(720px, 100%); display: flex; flex-direction: column; gap: 10px; }
+.story-card-inner canvas { width: 100%; aspect-ratio: 16 / 9; image-rendering: pixelated; border: 1px solid #c6ae7e88; border-radius: 6px; background: #000; }
+.story-eyebrow { margin: 6px 0 0; font-size: 11px; letter-spacing: 2.6px; color: #c6ae7e; }
+.story-title { margin: 0; font: 34px/1.1 Georgia, serif; color: #f0d48a; }
+.story-text { margin: 0; color: #d7dbd2; font-size: 15px; line-height: 1.6; min-height: 4.8em; }
+.story-actions { display: flex; align-items: center; gap: 10px; }
+.story-actions .story-count { flex: 1; color: #7d8d8d; font-size: 11px; letter-spacing: 1.5px; }
+.story-actions .primary, .story-actions .secondary { width: auto; min-width: 140px; margin: 0; gap: 18px; }
+
+/* Home: Archive and Act III buttons, and their panels */
+.home-art .story-spot { display: flex; align-items: center; gap: 1.8cqw; padding: .5cqw 1cqw; text-align: left; background: #07121b;
+  border-color: #3a4651; color: #e7e5d9; font-size: 1.15cqw; letter-spacing: .2cqw; }
+.home-art .story-spot small { display: block; margin-top: .3cqw; font-size: .8cqw; color: #b6bfbd; }
+.home-art .story-spot:hover, .home-art .story-spot:focus-visible { background: #132029; }
+.home-art .story-spot.locked { color: #8c989d; }
+.home-modal-card.wide { width: min(640px, 92%); max-height: 86%; overflow: auto; }
+.home-modal-card h3 + h3, .home-modal-card ol + h3 { margin-top: 18px; }
+.archive-pages, .archive-endings { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.archive-pages li, .archive-endings li { padding: 8px 10px; border: 1px solid #2c3a40; border-radius: 6px; color: #7d8d8d; font-size: 12px; }
+.archive-pages li.found, .archive-endings li.found { border-color: #c6ae7e88; color: #d7dbd2; }
+.archive-pages b, .archive-endings b { display: block; color: #f0d48a; font-weight: 600; }
+.archive-pages li:not(.found) b, .archive-endings li:not(.found) b { color: #8c989d; }
+.archive-pages small, .archive-endings small { display: block; color: #8fa3a4; font-size: 10px; letter-spacing: .6px; }
+.archive-pages p { margin: 5px 0 0; line-height: 1.5; font-style: italic; }
+.act3-lead { color: #b6bfbd; font-size: 13px; line-height: 1.5; }
+.act3-depths { display: grid; gap: 8px; margin-bottom: 8px; }
+.act3-depth { display: grid; grid-template-columns: 1fr auto; text-align: left; padding: 9px 12px; border: 1px solid #3a4651; border-radius: 6px; background: #07121b; color: #dcdfd6; cursor: pointer; }
+.act3-depth small { grid-column: 1; font-size: 10px; letter-spacing: 1.2px; color: #b6bfbd; }
+.act3-depth span { grid-column: 1; font: 15px Georgia, serif; }
+.act3-depth i { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; color: #f0d48a; }
+.act3-depth:hover:not(:disabled) { border-color: #f0d48a; background: #132029; }
+.act3-depth.locked { color: #8c989d; cursor: not-allowed; }
+
+/* Heist Complete: which ending this was */
+.end-ending { position: absolute; display: flex; align-items: center; justify-content: center; font: 600 1.35cqw 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: .22em; color: #f6dc95; text-shadow: 0 0 1cqw #f0b84a88; background: #0b0a08cc; border: 1px solid #c79a3c99; border-radius: 1cqw; }
+.end-ending[hidden] { display: none; }
+#radio.low { top: auto; bottom: 34px; }

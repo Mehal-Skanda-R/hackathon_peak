@@ -93,6 +93,10 @@ export default class VisibilitySystem {
     ]);
     for (const glow of this.lampGlows) glow.image.setDepth(50.5).setBlendMode(Phaser.BlendModes.ADD);
     this.lampTime = 0;
+    // Lights that move (lantern-bearers), set each frame by setMovingLights().
+    this.movingLights = [];
+    // Catacomb depths shrink the thief's own dim circle (map geometry `ambientRadius`).
+    this.ambientRadius = mapGeometry.ambientRadius ?? AMBIENT_RADIUS;
 
     this.activePulses = [];
     this.preview = null;
@@ -137,10 +141,16 @@ export default class VisibilitySystem {
       this.overlay.erase(this.brush);
     }
 
+    // Lantern light: map only, like lamps (guards still need pulse light).
+    for (const light of this.movingLights) {
+      this.brush.setPosition(light.x, light.y).setScale(light.radius / BRUSH_RADIUS).setAlpha(0.5);
+      this.overlay.erase(this.brush);
+    }
+
     // Non-pulsing dim vision that follows the thief.
     const me = this.scene.getPlayerState?.();
     if (me) {
-      this.brush.setPosition(me.x, me.y).setScale(AMBIENT_RADIUS / BRUSH_RADIUS).setAlpha(AMBIENT_STRENGTH);
+      this.brush.setPosition(me.x, me.y).setScale(this.ambientRadius / BRUSH_RADIUS).setAlpha(AMBIENT_STRENGTH);
       this.overlay.erase(this.brush);
     }
 
@@ -167,6 +177,11 @@ export default class VisibilitySystem {
       this.overlay.erase(this.brush);
       p.drawn = { x: at.x, y: at.y, radius: currentRadius, strength };
     }
+  }
+
+  // [{ x, y, radius }]: lights carried by guards this frame.
+  setMovingLights(lights) {
+    this.movingLights = lights ?? [];
   }
 
   // How strongly pulse light (or the round-start preview) reveals a point, 0..1.

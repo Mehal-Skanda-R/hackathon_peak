@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import Player from './Player.js';
 import { createMuseumArt, coinTexture } from './MuseumArt.js';
 import { SCENE_KEY, WORLD_WIDTH, WORLD_HEIGHT, WALLS, LEVELS, LEVEL, COINS, COINS_REQUIRED,
-  ARTEFACT, EXIT, MAP_GEOMETRY, setLevel, canOccupy, hasLineOfSight } from './config.js';
+  ARTEFACT, SHRINE, EXIT, MAP_GEOMETRY, setLevel, actOf, canOccupy, hasLineOfSight } from './config.js';
 
 const COIN_PICKUP_DISTANCE = 18;
 
@@ -10,7 +10,7 @@ export const ENGINE_EVENTS = Object.freeze({
   READY: 'engine:ready', STATE: 'engine:state', PICKUP: 'engine:artefact-collected',
   VICTORY: 'engine:victory', CAUGHT: 'engine:caught',
   COIN: 'engine:coin', DOOR: 'engine:door', LEVEL_COMPLETE: 'engine:level-complete',
-  DOOR_LOCKED: 'engine:door-locked',
+  DOOR_LOCKED: 'engine:door-locked', SHRINE: 'engine:shrine',
 });
 
 export default class MuseumScene extends Phaser.Scene {
@@ -28,6 +28,12 @@ export default class MuseumScene extends Phaser.Scene {
     this.status = 'ready';
     this.pauseReason = null;
     this.hasArtefact = false;
+    // Story state (src/story): the Golden Heart's lock, a door the Warden has
+    // sealed, Aurel's shrine, and coins taken by the rival thief.
+    this.artefactLocked = Boolean(LEVEL.heartLock);
+    this.doorSealed = false;
+    this.shrineLit = false;
+    this.rivalCoins = 0;
     this.restartPending = false;
     this.lastSnapshot = null;
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
@@ -84,12 +90,18 @@ export default class MuseumScene extends Phaser.Scene {
 
   // Engine subset only. Mehal aggregates it into the shared GameState.
   getState() {
+    const act = actOf(this.levelIndex);
     return Object.freeze({ status: this.status, hasArtefact: this.hasArtefact,
       pauseReason: this.pauseReason, player: this.getPlayerState(),
-      level: this.levelIndex + 1, levelCount: LEVELS.length, levelName: LEVEL.name,
-      needsArtefact: Boolean(ARTEFACT),
+      level: this.levelIndex + 1, levelCount: LEVELS.length, levelName: LEVEL.name, levelId: LEVEL.id,
+      act: act.id, actName: act.name, operation: act.operation, actUnit: act.unit,
+      actFloor: this.levelIndex - act.first + 1, actFloorCount: act.last - act.first + 1,
+      finalFloor: Boolean(LEVEL.final),
+      // The Golden Heart is optional (take it or leave it); the door never needs it.
+      needsArtefact: false, heartLock: Boolean(LEVEL.heartLock), artefactLocked: this.artefactLocked,
+      hasShrine: Boolean(SHRINE), shrineLit: this.shrineLit, doorSealed: this.doorSealed,
       coins: this.coinsBefore + this.coinsCollected,
-      levelCoins: this.coinsCollected, levelCoinTotal: COINS.length,
+      levelCoins: this.coinsCollected, levelCoinTotal: COINS.length, rivalCoins: this.rivalCoins,
       coinsRequired: COINS_REQUIRED, doorOpen: this.doorOpen() });
   }
 
@@ -101,7 +113,7 @@ export default class MuseumScene extends Phaser.Scene {
   hasLineOfSight(from, to) { return hasLineOfSight(from, to); }
 
   collectArtefact() {
-    if (this.status !== 'playing' || this.restartPending || this.hasArtefact) return false;
+    if (this.status !== 'playing' || this.restartPending || this.hasArtefact || this.artefactLocked) return false;
     this.hasArtefact = true;
     this.artefact.body.enable = false;
     this.artefactVisual.setVisible(false);
@@ -111,10 +123,49 @@ export default class MuseumScene extends Phaser.Scene {
     return true;
   }
 
-  // Entering the door ends the level: on to the next one (no way back), or
-  // victory on the final level, which also requires the crystal.
+  // Story hooks (src/story/StorySystem.js).
+  setArtefactLocked(locked) {
+    this.artefactLocked = Boolean(locked);
+    this.publishState(true);
+  }
+
+  setDoorSealed(sealed) {
+    this.doorSealed = Boolean(sealed);
+    this.updateDoorLook();
+    this.publishState(true);
+  }
+
+  lightShrine() {
+    if (!SHRINE || this.shrineLit || this.status !== 'playing') return false;
+    this.shrineLit = true;
+    this.updateDoorLook();
+    this.events.emit(ENGINE_EVENTS.SHRINE, this.getState());
+    this.publishState(true);
+    return true;
+  }
+
+  // Coins still on the floor, for the rival thief.
+  activeCoins() {
+    return this.coins.filter(coin => coin.active && !coin.collected);
+  }
+
+  // The rival takes a coin: it is gone for the player, but never so many that
+  // the door's coin requirement becomes impossible.
+  takeCoinByRival(coin) {
+    if (this.status !== 'playing' || !coin?.active || coin.collected) return false;
+    if (this.activeCoins().length + this.coinsCollected - 1 < COINS_REQUIRED) return false;
+    coin.collected = true;
+    this.rivalCoins++;
+    this.tweens.add({ targets: coin, scale: 0.2, alpha: 0, duration: 260, onComplete: () => coin.destroy() });
+    this.publishState(true);
+    return true;
+  }
+
+  // Entering the door ends the level: on to the next one (no way back), or the
+  // end of the act on its final floor. The door needs this floor's coins, and
+  // stays shut while the Warden has sealed it or before the shrine is lit.
   doorOpen() {
-    return this.coinsCollected >= COINS_REQUIRED && (!ARTEFACT || this.hasArtefact);
+    return this.coinsCollected >= COINS_REQUIRED && (!SHRINE || this.shrineLit) && !this.doorSealed;
   }
 
   updateDoorLook() {
@@ -143,7 +194,7 @@ export default class MuseumScene extends Phaser.Scene {
     this.events.emit(ENGINE_EVENTS.DOOR, this.getState());
     this.publishState(true);
     const door = { x: EXIT.x + EXIT.width / 2, y: EXIT.y + EXIT.height / 2 };
-    const finalLevel = this.levelIndex >= LEVELS.length - 1;
+    const finalLevel = Boolean(LEVEL.final);
     // Door swings open, the thief walks in and disappears, the view fades out.
     this.tweens.add({ targets: this.exitLeaf, scaleX: 0.08, duration: 350, ease: 'Sine.easeInOut' });
     this.tweens.add({
@@ -251,13 +302,13 @@ export default class MuseumScene extends Phaser.Scene {
     this.scene.restart({ level: index, coinsBefore: 0 });
   }
 
-  // After the final victory: start the whole game again from level 1.
+  // Restart from the first floor of the current act (floor 01, or depth 01 in Act III).
   restartGame() {
     if (this.restartPending) return;
     this.restartPending = true;
     this.player.update(false);
     this.physics.world.pause();
-    this.scene.restart({ level: 0, coinsBefore: 0 });
+    this.scene.restart({ level: actOf(this.levelIndex).first, coinsBefore: 0 });
   }
 
   publishState(force = false) {

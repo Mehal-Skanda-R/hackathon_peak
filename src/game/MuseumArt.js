@@ -3,7 +3,14 @@
 // Reads the active level's live bindings (config.setLevel); each level paints
 // and caches its own floor texture.
 import { WORLD_WIDTH as W, WORLD_HEIGHT as H, TILE_SIZE as T, WALLS,
-  HIDING_ZONES, ARTEFACT, EXIT, ENTRANCE, LEVEL } from './config.js';
+  HIDING_ZONES, ARTEFACT, SHRINE, EXIT, ENTRANCE, LEVEL } from './config.js';
+
+// Base colours per level theme: museum stone (Act I) or catacomb earth (Act III).
+const THEMES = Object.freeze({
+  museum: Object.freeze({ floor: [23, 35, 39], grout: '#384749', brick: [29, 41, 44], wall: '#10191f', edge: '#657169' }),
+  catacombs: Object.freeze({ floor: [33, 28, 23], grout: '#4a3f33', brick: [46, 38, 31], wall: '#1a1410', edge: '#7a6a55' }),
+});
+const theme = () => THEMES[LEVEL.theme] ?? THEMES.museum;
 
 const PREFIX = 'hh-museum-v1-';
 const hash = (x, y, salt = 0) => {
@@ -131,14 +138,49 @@ function exhibit(ctx, r) {
   ctx.fillText('PREHISTORIC HALL', cx, r.y + r.height - 12);
 }
 
+// A heap of skulls and bones filling a 'x' wall cell block (catacombs).
+function bones(ctx, r) {
+  ctx.fillStyle = '#120d0a'; ctx.fillRect(r.x, r.y, r.width, r.height);
+  for (let y = r.y + 6; y < r.y + r.height - 2; y += 9) {
+    for (let x = r.x + 5 + ((y / 9) % 2) * 4; x < r.x + r.width - 3; x += 10) {
+      const tone = 180 + Math.floor(hash(x, y) * 40);
+      ctx.fillStyle = `rgb(${tone},${tone - 12},${tone - 34})`;
+      ctx.beginPath(); ctx.ellipse(x, y, 4, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1a120c'; ctx.fillRect(x - 2, y - 1, 1.5, 1.5); ctx.fillRect(x + 1, y - 1, 1.5, 1.5);
+    }
+  }
+  ctx.strokeStyle = '#a8977a'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (let i = 0; i < r.width / 16; i++) {
+    const x = r.x + 4 + hash(r.x, i) * (r.width - 8), y = r.y + 4 + hash(r.y, i + 3) * (r.height - 8);
+    ctx.beginPath(); ctx.moveTo(x - 5, y - 2); ctx.lineTo(x + 5, y + 2); ctx.stroke();
+  }
+  ctx.strokeStyle = '#5a4a38'; ctx.lineWidth = 1; ctx.strokeRect(r.x + 1.5, r.y + 1.5, r.width - 3, r.height - 3);
+}
+
+// Aurel's shrine: a low stone altar with a heart-shaped hollow (Act III).
+function shrine(ctx, s) {
+  ctx.fillStyle = '#0c0907'; ctx.fillRect(s.x - 22, s.y - 14, 46, 34);
+  ctx.fillStyle = '#5d5040'; ctx.fillRect(s.x - 20, s.y - 16, 40, 30);
+  ctx.fillStyle = '#7f6f58'; ctx.fillRect(s.x - 20, s.y - 16, 40, 4);
+  ctx.strokeStyle = '#b39d78'; ctx.lineWidth = 1; ctx.strokeRect(s.x - 17.5, s.y - 11.5, 35, 22);
+  ctx.fillStyle = '#2a1f17';
+  ctx.beginPath(); ctx.moveTo(s.x, s.y + 7);
+  ctx.bezierCurveTo(s.x - 11, s.y - 1, s.x - 6, s.y - 10, s.x, s.y - 4);
+  ctx.bezierCurveTo(s.x + 6, s.y - 10, s.x + 11, s.y - 1, s.x, s.y + 7); ctx.fill();
+  ctx.fillStyle = '#c9b27a'; ctx.font = 'bold 7px serif'; ctx.textAlign = 'center';
+  ctx.fillText('AUREL', s.x, s.y + 22);
+}
+
 function paintMuseum(ctx) {
+  const palette = theme();
   ctx.fillStyle = '#091116'; ctx.fillRect(0, 0, W, H);
   for (let row = 0; row < H / T; row++) for (let col = 0; col < W / T; col++) {
     const x = col * T, y = row * T;
     const shade = Math.floor(hash(col, row) * 12);
-    ctx.fillStyle = `rgb(${23 + shade},${35 + shade},${39 + shade})`;
+    const [fr, fg, fb] = palette.floor;
+    ctx.fillStyle = `rgb(${fr + shade},${fg + shade},${fb + shade})`;
     ctx.fillRect(x + 1, y + 1, T - 2, T - 2);
-    ctx.strokeStyle = '#384749'; ctx.lineWidth = 0.7;
+    ctx.strokeStyle = palette.grout; ctx.lineWidth = 0.7;
     ctx.strokeRect(x + 2, y + 2, T - 4, T - 4);
     ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 2, y + T - 4, T - 3, 3);
     for (let i = 0; i < 16; i++) {
@@ -169,24 +211,25 @@ function paintMuseum(ctx) {
 
   // The stone blocks themselves match the collision rectangles exactly.
   // Pools and exhibits are walls too, but get their own art below.
-  const special = new Set([...(LEVEL.decor.pools ?? []), ...(LEVEL.decor.exhibits ?? [])]);
+  const special = new Set([...(LEVEL.decor.pools ?? []), ...(LEVEL.decor.exhibits ?? []), ...(LEVEL.decor.bones ?? [])]);
   const statues = LEVEL.decor.statues ?? WALLS.filter(w => w.width === 64 && w.height === 64);
   for (const wall of WALLS) {
     if (special.has(wall)) continue;
     ctx.shadowColor = 'rgba(0,0,0,.75)'; ctx.shadowBlur = 9; ctx.shadowOffsetY = 6;
-    ctx.fillStyle = '#10191f'; ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+    ctx.fillStyle = palette.wall; ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
     ctx.shadowColor = 'transparent'; ctx.shadowOffsetY = 0; ctx.shadowBlur = 0;
     ctx.save(); ctx.beginPath(); ctx.rect(wall.x, wall.y, wall.width, wall.height); ctx.clip();
     for (let y = wall.y; y < wall.y + wall.height; y += 12) {
       for (let x = wall.x - ((y / 12) % 2 ? 12 : 0); x < wall.x + wall.width; x += 24) {
         const shade = Math.floor(hash(x, y) * 11);
-        ctx.fillStyle = `rgb(${29 + shade},${41 + shade},${44 + shade})`;
+        const [br, bg, bb] = palette.brick;
+        ctx.fillStyle = `rgb(${br + shade},${bg + shade},${bb + shade})`;
         ctx.fillRect(x + 1, y + 1, 22, 10);
         ctx.fillStyle = 'rgba(130,151,145,.13)'; ctx.fillRect(x + 1, y + 1, 22, 1);
       }
     }
     ctx.restore();
-    ctx.strokeStyle = '#657169'; ctx.lineWidth = 1;
+    ctx.strokeStyle = palette.edge; ctx.lineWidth = 1;
     ctx.strokeRect(wall.x + 1.5, wall.y + 1.5, wall.width - 3, wall.height - 3);
     ctx.strokeStyle = '#101b20'; ctx.lineWidth = 2;
     ctx.strokeRect(wall.x + 4, wall.y + 4, wall.width - 8, wall.height - 8);
@@ -195,6 +238,8 @@ function paintMuseum(ctx) {
   for (const r of LEVEL.decor.pools ?? []) pool(ctx, r);
   for (const r of LEVEL.decor.bridges ?? []) bridge(ctx, r);
   for (const r of LEVEL.decor.exhibits ?? []) exhibit(ctx, r);
+  for (const r of LEVEL.decor.bones ?? []) bones(ctx, r);
+  if (SHRINE) shrine(ctx, SHRINE);
 
   // Decorative banners on wall faces, not additional obstacles.
   for (const [x, y] of LEVEL.decor.banners) {
@@ -297,36 +342,45 @@ export function coinTexture(scene) {
   });
 }
 
+// The thief's colours; the rival thief (src/story/art.js) repaints the same figure.
+export const THIEF_PALETTE = Object.freeze({
+  glow: 'rgba(44,211,227,.12)', legs: '#07151f', boots: '#467483', cloak: '#123a4a', cloakEdge: '#3097a4',
+  hood: '#1f6a79', hoodEdge: '#59cccf', face: '#061821', eyes: '#99f5ed', seam: '#4c9a9d',
+  arms: '#091b24', armEdge: '#438d96', strap: '#c0a269',
+});
+
+export function paintThief(ctx, facing, stride, c = THIEF_PALETTE) {
+  glow(ctx, 20, 20, 20, c.glow);
+  ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.beginPath(); ctx.ellipse(21, 31, 11, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.save(); if (facing === 'left') { ctx.translate(40, 0); ctx.scale(-1, 1); }
+  ctx.fillStyle = c.legs;
+  ctx.fillRect(14 + stride * 2, 25, 5, 8 - stride * 2);
+  ctx.fillRect(22 - stride * 2, 25, 5, 6 + stride * 2);
+  ctx.fillStyle = c.boots; ctx.fillRect(13 + stride * 2, 31 - stride * 2, 7, 3);
+  ctx.fillRect(22 - stride * 2, 29 + stride * 2, 7, 3);
+  ctx.fillStyle = c.cloak;
+  ctx.beginPath(); ctx.moveTo(15, 14); ctx.lineTo(25, 14); ctx.lineTo(29, 28);
+  ctx.lineTo(11, 28); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = c.cloakEdge; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = c.hood; ctx.beginPath(); ctx.ellipse(20, 12, 9, 10, -.15, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = c.hoodEdge; ctx.stroke();
+  if (facing !== 'up') {
+    ctx.fillStyle = c.face; ctx.beginPath(); ctx.ellipse(facing === 'down' ? 20 : 24, 13, 6, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = c.eyes; ctx.fillRect(facing === 'down' ? 17 : 24, 12, 2, 2);
+    ctx.fillRect(facing === 'down' ? 22 : 27, 12, 2, 2);
+  } else {
+    ctx.strokeStyle = c.seam; ctx.beginPath(); ctx.moveTo(19, 5); ctx.lineTo(19, 17); ctx.stroke();
+  }
+  ctx.strokeStyle = c.arms; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(12, 19); ctx.lineTo(10, 25 + stride * 2);
+  ctx.moveTo(27, 18); ctx.lineTo(30, 24 - stride * 2); ctx.stroke();
+  ctx.strokeStyle = c.armEdge; ctx.lineWidth = 1; ctx.stroke();
+  ctx.strokeStyle = c.strap; ctx.beginPath(); ctx.moveTo(15, 19); ctx.lineTo(24, 26); ctx.stroke();
+  ctx.restore();
+}
+
 export function thiefTexture(scene, facing, stride) {
-  return texture(scene, `thief-${facing}-${stride}`, 40, 40, ctx => {
-    glow(ctx, 20, 20, 20, 'rgba(44,211,227,.12)');
-    ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.beginPath(); ctx.ellipse(21, 31, 11, 5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.save(); if (facing === 'left') { ctx.translate(40, 0); ctx.scale(-1, 1); }
-    ctx.fillStyle = '#07151f';
-    ctx.fillRect(14 + stride * 2, 25, 5, 8 - stride * 2);
-    ctx.fillRect(22 - stride * 2, 25, 5, 6 + stride * 2);
-    ctx.fillStyle = '#467483'; ctx.fillRect(13 + stride * 2, 31 - stride * 2, 7, 3);
-    ctx.fillRect(22 - stride * 2, 29 + stride * 2, 7, 3);
-    ctx.fillStyle = '#123a4a';
-    ctx.beginPath(); ctx.moveTo(15, 14); ctx.lineTo(25, 14); ctx.lineTo(29, 28);
-    ctx.lineTo(11, 28); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#3097a4'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = '#1f6a79'; ctx.beginPath(); ctx.ellipse(20, 12, 9, 10, -.15, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#59cccf'; ctx.stroke();
-    if (facing !== 'up') {
-      ctx.fillStyle = '#061821'; ctx.beginPath(); ctx.ellipse(facing === 'down' ? 20 : 24, 13, 6, 6, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#99f5ed'; ctx.fillRect(facing === 'down' ? 17 : 24, 12, 2, 2);
-      ctx.fillRect(facing === 'down' ? 22 : 27, 12, 2, 2);
-    } else {
-      ctx.strokeStyle = '#4c9a9d'; ctx.beginPath(); ctx.moveTo(19, 5); ctx.lineTo(19, 17); ctx.stroke();
-    }
-    ctx.strokeStyle = '#091b24'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(12, 19); ctx.lineTo(10, 25 + stride * 2);
-    ctx.moveTo(27, 18); ctx.lineTo(30, 24 - stride * 2); ctx.stroke();
-    ctx.strokeStyle = '#438d96'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.strokeStyle = '#c0a269'; ctx.beginPath(); ctx.moveTo(15, 19); ctx.lineTo(24, 26); ctx.stroke();
-    ctx.restore();
-  });
+  return texture(scene, `thief-${facing}-${stride}`, 40, 40, ctx => paintThief(ctx, facing, stride));
 }
 
 // Optional visual-only helper for Shyam. GuardSystem retains movement, suspicion,

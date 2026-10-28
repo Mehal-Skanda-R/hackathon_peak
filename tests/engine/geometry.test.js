@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WORLD_WIDTH, WORLD_HEIGHT, TILE_SIZE, MAP_COLUMNS, MAP_ROWS, WALLS,
-  SPAWN, PLAYER_SPEED, LEVELS, setLevel,
+  SPAWN, PLAYER_SPEED, LEVELS, ACTS, actOf, setLevel,
   canOccupy, hasLineOfSight, getHidingZone, movementVelocity } from '../../src/game/config.js';
+import { JOURNAL, journalFor } from '../../src/story/script.js';
 
 test('walls are within the 800 × 544 world; invalid/outside positions are blocked', () => {
   assert.equal(WORLD_WIDTH, 800);
@@ -40,8 +41,11 @@ for (const [index, level] of LEVELS.entries()) {
         if (canOccupy((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)) assert.ok(distances.has(`${x},${y}`), `floor ${x},${y}`);
       }
       const door = { x: level.door.x + 16, y: level.door.y + 16 };
+      const page = journalFor(level.id);
+      assert.ok(page, `${level.id} has a journal page`);
+      const pagePoint = { x: (page.cell[0] + 0.5) * TILE_SIZE, y: (page.cell[1] + 0.5) * TILE_SIZE };
       const points = [door, ...level.coins, ...level.hidingZones.map(z => ({ x: z.x + 16, y: z.y + 16 })),
-        ...(level.artefact ? [level.artefact] : [])];
+        ...(level.artefact ? [level.artefact] : []), ...(level.shrine ? [level.shrine] : []), pagePoint];
       for (const point of points) assert.ok(distances.has(tile(point)), `unreachable ${tile(point)}`);
       const inside = (p, r) => p.x >= r.x && p.x < r.x + r.width && p.y >= r.y && p.y < r.y + r.height;
       for (const coin of level.coins) {
@@ -51,8 +55,16 @@ for (const [index, level] of LEVELS.entries()) {
       // The door needs 50% of this level's coins, rounded up.
       assert.equal(level.coinsRequired, Math.ceil(level.coins.length * 0.5),
         `${level.id} needs ${level.coinsRequired} of ${level.coins.length} coins`);
-      // Only the final level carries the crystal; its door needs it.
-      assert.equal(Boolean(level.artefact), index === LEVELS.length - 1);
+      // The Golden Heart is on floor 07 only; Aurel's shrine on Act III's last depth only.
+      assert.equal(Boolean(level.artefact), level.id === 'final-heist');
+      assert.equal(Boolean(level.shrine), level.id === 'heart-shrine');
+      // The journal page sits on open floor, clear of coins, cover, doors and objectives.
+      const same = (a, b) => tile(a) === tile(b);
+      assert.equal(getHidingZone(pagePoint.x, pagePoint.y, 1), null, `${level.id} page in cover`);
+      assert.ok(!inside(pagePoint, level.door) && !inside(pagePoint, level.entrance), `${level.id} page on a door`);
+      for (const other of [...level.coins, level.artefact, level.shrine].filter(Boolean)) {
+        assert.ok(!same(pagePoint, other), `${level.id} page shares ${tile(other)}`);
+      }
       const steps = distances.get(tile(door));
       if (index === 0) assert.ok(steps >= 44 && steps <= 70, `Door route is ${steps} tiles`);
       t.diagnostic(`Shortest four-direction route to the door: ${steps} tiles`);
@@ -61,6 +73,19 @@ for (const [index, level] of LEVELS.entries()) {
     }
   });
 }
+
+test('acts cover every level once; one final floor per act', () => {
+  const covered = ACTS.flatMap(act => Array.from({ length: act.last - act.first + 1 }, (_, i) => act.first + i));
+  assert.deepEqual(covered, LEVELS.map((_, i) => i));
+  for (const act of ACTS) {
+    const finals = LEVELS.slice(act.first, act.last + 1).filter(level => level.final);
+    assert.deepEqual(finals, [LEVELS[act.last]], `act ${act.id} ends on its last floor`);
+    assert.ok(LEVELS.slice(act.first, act.last + 1).every(level => level.act === act.id));
+  }
+  assert.equal(actOf(6).id, 1);
+  assert.equal(actOf(7).id, 3);
+  assert.equal(JOURNAL.length, LEVELS.length);
+});
 
 test('diagonal speed is normalized, opposite keys cancel, no input stops', () => {
   for (const keys of [[false, true, false, false], [false, true, true, false]]) {

@@ -26,9 +26,9 @@ const BORDER = [
 // Text-grid levels (25 x 17). Legend:
 //   '#' wall   'b' wall with a banner   's' statue (2x2 wall)   'K' exhibit (wall)
 //   'P' pool (wall)   '.' floor   'h' cover (2x2)   'r' decorative rug   'c' coin
-//   'l' lamp (floor)  '=' bridge (floor)
-// spawn/entrance/door/artefact are given in tiles: [column, row(, columns, rows)].
-const WALL_CHARS = new Set(['#', 'b', 's', 'K', 'P']);
+//   'l' lamp (floor)  '=' bridge (floor)  'x' bone pile (wall, catacombs)
+// spawn/entrance/door/artefact/shrine are given in tiles: [column, row(, columns, rows)].
+const WALL_CHARS = new Set(['#', 'b', 's', 'K', 'P', 'x']);
 
 // Merge cells whose character is in `chars` into as few rectangles as possible:
 // horizontal runs per row, then identical runs stacked over consecutive rows.
@@ -53,7 +53,7 @@ function mergeCells(rows, chars, skip = new Set()) {
   return done.map(r => tileRect(r.column, r.row, r.columns, r.rows));
 }
 
-function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
+function asciiLevel({ id, name, rows, spawn, entrance, door, artefact, shrine = null, ...story }) {
   if (rows.length !== MAP_ROWS || rows.some(line => line.length !== MAP_COLUMNS)) {
     throw new Error(`Level ${id} must be ${MAP_COLUMNS} x ${MAP_ROWS}`);
   }
@@ -76,8 +76,10 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
   }));
   const exhibits = mergeCells(rows, new Set(['K']));
   const pools = mergeCells(rows, new Set(['P']));
-  const walls = [...mergeCells(rows, new Set(['#', 'b'])), ...statues, ...exhibits, ...pools];
+  const bones = mergeCells(rows, new Set(['x']));
+  const walls = [...mergeCells(rows, new Set(['#', 'b'])), ...statues, ...exhibits, ...pools, ...bones];
   return Object.freeze({
+    act: 1, theme: 'museum', ...story,
     id, name,
     walls: Object.freeze(walls),
     hidingZones: Object.freeze(hidingZones),
@@ -85,11 +87,12 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
     entrance: tileRect(...entrance),
     door: tileRect(...door),
     artefact: artefact ? Object.freeze({ ...center(...artefact), size: 20 }) : null,
+    shrine: shrine ? Object.freeze({ ...center(...shrine), size: 26 }) : null,
     coins: coins(coinTiles),
     coinsRequired: requiredCoins(coinTiles.length),
     decor: Object.freeze({
       rugs: mergeCells(rows, new Set(['r'])).map(r => [r.x + 3, r.y + 3, r.width - 6, r.height - 6]),
-      banners, lamps, statues, exhibits, pools,
+      banners, lamps, statues, exhibits, pools, bones,
       bridges: mergeCells(rows, new Set(['='])),
     }),
   });
@@ -101,13 +104,23 @@ function asciiLevel({ id, name, rows, spawn, entrance, door, artefact }) {
 export const COIN_SHARE_REQUIRED = 0.5;
 export const requiredCoins = total => Math.ceil(total * COIN_SHARE_REQUIRED);
 
-// Levels play in order (level 1 + levels 02-07 from the team's concept sheet).
-// Entering a level's door moves on to the next level with no way back; the
-// crystal is the collectable of the final level only, placed at its door,
-// and that door opens only once it is carried. Coins are an optional
-// score. `entrance` is the closed door the thief arrived through (decor only).
+// Levels play in order within their act. Act I is the seven museum floors
+// (level 1 + levels 02-07 from the team's concept sheet); Act III is three
+// catacomb depths below the castle, unlocked by escaping with the Golden
+// Heart. Entering a door moves on with no way back; an act's `final` floor
+// ends the act instead. The Golden Heart (the crystal) sits behind the Heart
+// Lock on floor 07, next to the door, and is optional: leaving it is the
+// clean-thief ending. Act III's last depth has Aurel's shrine, where the Heart
+// must be placed before the door opens. `entrance` is decor only.
+export const ACTS = Object.freeze([
+  Object.freeze({ id: 1, name: 'The Museum Job', operation: 'OPERATION 001', unit: 'FLOOR', first: 0, last: 6 }),
+  Object.freeze({ id: 3, name: 'The Catacombs', operation: 'OPERATION 002', unit: 'DEPTH', first: 7, last: 9 }),
+]);
+export const actOf = index => ACTS.find(act => index >= act.first && index <= act.last) ?? ACTS[0];
+
 export const LEVELS = Object.freeze([
   Object.freeze({
+    act: 1, theme: 'museum',
     id: 'gallery', name: 'The Museum Job',
     walls: Object.freeze([
       ...BORDER,
@@ -127,7 +140,7 @@ export const LEVELS = Object.freeze([
     spawn: center(2, 14),
     entrance: tileRect(1, 13, 2, 3),
     door: tileRect(22, 1, 2, 2),
-    artefact: null,
+    artefact: null, shrine: null,
     coins: coins([[1, 1], [7, 1], [4, 8], [4, 15], [9, 5], [15, 1], [9, 15], [15, 15],
       [16, 10], [23, 15], [23, 7], [19, 4], [19, 1]]),
     coinsRequired: requiredCoins(13),
@@ -253,7 +266,7 @@ export const LEVELS = Object.freeze([
     ],
   }),
   asciiLevel({
-    id: 'final-heist', name: 'The Pinnacle Heist',
+    id: 'final-heist', name: 'The Pinnacle Heist', final: true, heartLock: true,
     spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: [20, 15],
     rows: [
       "#########################",
@@ -275,6 +288,76 @@ export const LEVELS = Object.freeze([
       "#########################",
     ],
   }),
+  // Act III: the catacombs. No lamps; the thief's dim circle is smaller.
+  asciiLevel({
+    id: 'bone-stair', name: 'The Bone Stair', act: 3, theme: 'catacombs', ambientRadius: 84,
+    spawn: [1, 2], entrance: [1, 1, 2, 2], door: [22, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#...#......c....#.....c.#",
+      "#...#.####.###..#.hh....#",
+      "#.......#....#....hh.xx.#",
+      "####.##.#.c..#.####..xx.#",
+      "#c...#..######.#..#.....#",
+      "#.hh.#.........#..#..#c.#",
+      "#.hh.###.####.##..####.##",
+      "#........#..c.........#.#",
+      "###.####.#.#####.####.#.#",
+      "#c.....#...#.hh..#c...#.#",
+      "#.xx.#.##.##.hh..#.##...#",
+      "#.xx.#........#..#..#.###",
+      "#....#.hh.###.####..#...#",
+      "#..c...hh.#..c.....x....#",
+      "#c........#......c.x....#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'ossuary', name: 'The Ossuary', act: 3, theme: 'catacombs', ambientRadius: 84,
+    spawn: [11, 2], entrance: [11, 1, 2, 2], door: [22, 14, 2, 2], artefact: null,
+    rows: [
+      "#########################",
+      "#c.....#..........#....c#",
+      "#.hh...#.xx...xx..#.hh..#",
+      "#.hh...#..........#.hh..#",
+      "#......###.####.###.....#",
+      "###.#......#..#.......###",
+      "#...#.xxxx.#c.#.xxxx....#",
+      "#.c.#......#..#.......c.#",
+      "#...####.###.##.#####...#",
+      "#......#..........#.....#",
+      "####.#.#..hh..hh..#.#.###",
+      "#....#....hh..hh....#...#",
+      "#.xx.###.########.###.x.#",
+      "#.xx...#.....c....#...x.#",
+      "#......#..........#.....#",
+      "#c........c....c....c...#",
+      "#########################",
+    ],
+  }),
+  asciiLevel({
+    id: 'heart-shrine', name: "Aurel's Shrine", act: 3, theme: 'catacombs', ambientRadius: 84, final: true,
+    spawn: [1, 15], entrance: [1, 14, 2, 2], door: [22, 14, 2, 2], artefact: null, shrine: [12, 5],
+    rows: [
+      "#########################",
+      "#c.....#....#....#.....c#",
+      "#.hh...#.xx...xx.#..hh..#",
+      "#.hh..##.........##.hh..#",
+      "#.....#..xx...xx..#.....#",
+      "###.###...........###.###",
+      "#.......#.......#.......#",
+      "#.xx....##.#.#.##....xx.#",
+      "#.xx....#..#.#..#....xx.#",
+      "#.......#.c...c.#.......#",
+      "####.####.......####.####",
+      "#....#....##.##....#....#",
+      "#.hh.#.c..#...#..c.#.hh.#",
+      "#.hh......#.c.#........##",
+      "#....#..........#..c....#",
+      "#....#.c........#.......#",
+      "#########################",
+    ],
+  }),
 ]);
 
 // The active level. These are live ES module bindings: importers always see
@@ -284,7 +367,8 @@ export let LEVEL = LEVELS[0];
 export let WALLS = LEVEL.walls;
 export let HIDING_ZONES = LEVEL.hidingZones;
 export let SPAWN = LEVEL.spawn;
-export let ARTEFACT = LEVEL.artefact;   // null except in the final level
+export let ARTEFACT = LEVEL.artefact;   // the Golden Heart: floor 07 only
+export let SHRINE = LEVEL.shrine;       // Aurel's shrine: Act III's last depth only
 export let EXIT = LEVEL.door;           // the level's door: entering it ends the level
 export let ENTRANCE = LEVEL.entrance;
 export let COINS = LEVEL.coins;
@@ -299,6 +383,7 @@ export function setLevel(index) {
   HIDING_ZONES = LEVEL.hidingZones;
   SPAWN = LEVEL.spawn;
   ARTEFACT = LEVEL.artefact;
+  SHRINE = LEVEL.shrine;
   EXIT = LEVEL.door;
   ENTRANCE = LEVEL.entrance;
   COINS = LEVEL.coins;
@@ -307,6 +392,7 @@ export function setLevel(index) {
     width: WORLD_WIDTH, height: WORLD_HEIGHT, tileSize: TILE_SIZE,
     columns: MAP_COLUMNS, rows: MAP_ROWS,
     levelId: LEVEL.id, levelIndex: index, levelName: LEVEL.name, levelCount: LEVELS.length,
+    act: LEVEL.act, theme: LEVEL.theme, ambientRadius: LEVEL.ambientRadius, shrine: SHRINE,
     walls: WALLS, hidingZones: HIDING_ZONES, spawn: SPAWN,
     artefact: ARTEFACT, exit: EXIT, entrance: ENTRANCE, coins: COINS, coinsRequired: COINS_REQUIRED,
   });

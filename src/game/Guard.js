@@ -1,8 +1,12 @@
 // Single guard: patrol -> suspicious (investigate) -> chase -> return.
 // Pure logic over Soham's geometry helpers; GuardSystem owns rendering/events.
+// Kinds (story expansion): 'watchman' (default), 'hound' (hears pulses from
+// further away), 'lantern' (carries a light; seeing the thief inside it starts
+// a chase) and 'sleeper' (asleep at its post until enough pulses reach it).
 import { canOccupy as defaultCanOccupy, hasLineOfSight as defaultHasLineOfSight } from './config.js';
 
-export const GUARD_STATES = Object.freeze(['patrol', 'suspicious', 'chase', 'return']);
+export const GUARD_STATES = Object.freeze(['patrol', 'suspicious', 'chase', 'return', 'asleep']);
+export const GUARD_KINDS = Object.freeze(['watchman', 'hound', 'lantern', 'sleeper']);
 
 // Initial tuning from context.md section 4. Not playtested balance.
 export const GUARD_TUNING = Object.freeze({
@@ -19,6 +23,15 @@ export const GUARD_TUNING = Object.freeze({
   hiddenGiveUpMs: 3000,     // player hidden in cover this long -> guard leaves
   calmDownMs: 5000,         // then suspicion drains linearly to 0 over this long
   investigateWaitMs: 1500,  // pause at the pulse origin before returning
+  hearingMultiplier: 1,     // pulse radius multiplier for hearing
+});
+
+// Per-kind overrides of GUARD_TUNING.
+export const KIND_TUNING = Object.freeze({
+  watchman: Object.freeze({}),
+  hound: Object.freeze({ hearingMultiplier: 1.8, chaseSpeed: 140 }),
+  lantern: Object.freeze({ patrolSpeed: 60, lightRadius: 64 }),
+  sleeper: Object.freeze({ wakePulses: 2 }),
 });
 
 const tileOf = (point, tileSize) => ({
@@ -63,13 +76,14 @@ export function findPath(from, to, map, canOccupy = defaultCanOccupy, bodySize =
 }
 
 export default class Guard {
-  constructor({ id, route, map, tuning = {}, canOccupy = defaultCanOccupy,
+  constructor({ id, route, map, tuning = {}, kind = 'watchman', canOccupy = defaultCanOccupy,
     hasLineOfSight = defaultHasLineOfSight }) {
     if (!route?.length) throw new Error(`Guard ${id} needs at least one waypoint`);
     this.id = id;
+    this.kind = kind;
     this.route = route;
     this.map = map;
-    this.tuning = { ...GUARD_TUNING, ...tuning };
+    this.tuning = { ...GUARD_TUNING, ...tuning, ...(KIND_TUNING[kind] ?? {}) };
     this.canOccupy = canOccupy;
     this.hasLineOfSight = hasLineOfSight;
     this.reset();
@@ -89,18 +103,32 @@ export default class Guard {
     this.caught = false;
     this.hiddenMs = 0;
     this.calmRate = 0; // suspicion/second while calming down after losing a hidden player
+    this.wakeCount = 0;
     this.advanceWaypoint();
+    if (this.kind === 'sleeper') { this.state = 'asleep'; this.path = []; }
   }
 
   getState() {
-    return Object.freeze({ id: this.id, x: this.x, y: this.y, state: this.state,
-      suspicion: this.suspicion });
+    return Object.freeze({ id: this.id, kind: this.kind, x: this.x, y: this.y, state: this.state,
+      suspicion: this.suspicion, lightRadius: this.tuning.lightRadius ?? 0 });
+  }
+
+  // A sleeper wakes after `wakePulses` pulses reach it and investigates the last.
+  wake(origin) {
+    this.state = 'suspicious';
+    this.suspicion = this.tuning.suspicionPerPulse;
+    this.waitMs = 0;
+    this.setDestination(origin);
   }
 
   // Pulse eligibility uses the emission snapshot (origin + hidingAtEmission).
   // Returns true when the pulse raised this guard's suspicion.
   handlePulse(pulse) {
-    if (Math.hypot(this.x - pulse.x, this.y - pulse.y) > pulse.radius) return false;
+    if (Math.hypot(this.x - pulse.x, this.y - pulse.y) > pulse.radius * this.tuning.hearingMultiplier) return false;
+    if (this.state === 'asleep') {
+      if (++this.wakeCount >= this.tuning.wakePulses) this.wake({ x: pulse.x, y: pulse.y });
+      return true;
+    }
     // A guard that already gave up on a hidden player ignores pulses from cover;
     // a pulse from out in the open ends the calm-down and counts normally.
     if (this.calmRate && pulse.hidingAtEmission) return false;
@@ -135,7 +163,15 @@ export default class Guard {
     } else if (this.state !== 'chase') {
       this.suspicion = Math.max(0, this.suspicion - this.tuning.suspicionDecayPerSecond * seconds);
     }
+    // A lantern-bearer sees the thief inside its light: an immediate chase.
+    if (this.tuning.lightRadius && this.state !== 'chase' && this.state !== 'asleep' && player && !player.hiding
+      && Math.hypot(player.x - this.x, player.y - this.y) <= this.tuning.lightRadius
+      && this.hasLineOfSight(this, player)) {
+      this.suspicion = Math.max(this.suspicion, this.tuning.chaseThreshold);
+      this.enterChase({ x: player.x, y: player.y });
+    }
     switch (this.state) {
+      case 'asleep': return false;
       case 'patrol': return this.updatePatrol(seconds);
       case 'suspicious': return this.updateSuspicious(seconds, deltaMs);
       case 'chase': return this.updateChase(seconds, deltaMs, player);

@@ -4,7 +4,9 @@ import { formatTime } from './progress.js';
 // Presentation only: renders the briefing panel, live readout, end-of-round
 // screen and full-screen toggle. Buttons dispatch window events that
 // src/main.js turns into engine/sensor calls; no game logic lives here.
-const GUARD_WORDS = { patrol: 'patrolling', return: 'patrolling', suspicious: 'suspicious', chase: 'CHASING' };
+const GUARD_WORDS = { patrol: 'patrolling', return: 'patrolling', suspicious: 'suspicious', chase: 'CHASING',
+  asleep: 'asleep', dormant: 'Warden asleep', hunt: 'Warden HUNTING', search: 'Warden searching',
+  inspect: 'Warden INSPECTING', rest: 'Warden resting', freed: 'Warden at rest' };
 
 export function initHUD() {
   const panel = document.getElementById('hud-container');
@@ -30,8 +32,11 @@ export function initHUD() {
     <ul class="legend">
       <li><span class="legend-icon thief">◈</span><div><b>The thief</b><small>Your cyan-cloaked character</small></div></li>
       <li><span class="legend-icon gold">●</span><div><b>Coins</b><small>Collect enough to open the exit door</small></div></li>
-      <li><span class="legend-icon gold">◇</span><div><b>The crystal</b><small>Final level only, in the vault</small></div></li>
-      <li><span class="legend-icon guard">◉</span><div><b>The guards</b><small>Yellow coats. <b style="display:inline;color:#ffa133">?</b> suspicious, <b style="display:inline;color:#ff5d6c">!</b> chasing</small></div></li>
+      <li><span class="legend-icon gold">◇</span><div><b>The Golden Heart</b><small>Floor 07, behind the Heart Lock. Take it, or leave it.</small></div></li>
+      <li><span class="legend-icon guard">◉</span><div><b>The guards</b><small>Yellow coats. <b style="display:inline;color:#ffa133">?</b> suspicious, <b style="display:inline;color:#ff5d6c">!</b> chasing. Hounds hear further, lantern-bearers see you in their light, sleepers (<b style="display:inline;color:#9db8ff">z</b>) wake on the second beat.</small></div></li>
+      <li><span class="legend-icon warden">◉</span><div><b>The Warden</b><small>Hears every beat, through walls. Red eyes in the dark. Hide and stay calm.</small></div></li>
+      <li><span class="legend-icon rival">◈</span><div><b>Vesper</b><small>A rival thief in red, racing you for coins.</small></div></li>
+      <li><span class="legend-icon gold">▤</span><div><b>Journal pages</b><small>One per floor, seen only in pulse light.</small></div></li>
       <li><span class="legend-icon cover">❧</span><div><b>Cover</b><small>Hide inside the leafy green rugs</small></div></li>
       <li><span class="legend-icon exit">⇥</span><div><b>The exit door</b><small>Walk in to reach the next level. No way back.</small></div></li>
     </ul>
@@ -85,7 +90,8 @@ export function initHUD() {
     const missing = Math.max(0, s.coinsRequired - s.levelCoins);
     doorNotice.textContent = missing > 0
       ? `Door locked: collect ${missing} more coin${missing === 1 ? '' : 's'}`
-      : 'Door locked: take the crystal first';
+      : s.doorSealed ? 'Sealed by the Warden. Hide, keep your heart down, and let him lose you.'
+        : s.hasShrine && !s.shrineLit ? "Locked: place the Heart on Aurel's shrine first." : 'Door locked';
     doorNotice.className = 'show';
     clearTimeout(noticeTimer);
     noticeTimer = setTimeout(() => doorNotice.classList.remove('show'), 1800);
@@ -151,11 +157,14 @@ export function initHUD() {
     // Heading status
     const statusText = {
       ready: usable ? 'Ready · press Enter the museum' : 'Waiting for heart-rate input',
-      playing: state.hasArtefact ? 'Crystal taken · get to the exit door' : 'Heist in progress',
+      playing: state.doorSealed ? 'The Warden is hunting · hide and stay calm'
+        : state.hasArtefact ? 'The Golden Heart is yours · get to the exit door'
+          : state.shrineLit ? 'The Heart is home · get to the exit door' : 'Heist in progress',
       transition: 'Through the door…',
       paused: `Paused · ${state.pauseReason ?? 'input unavailable'}`,
       caught: 'Caught by a guard',
-      victory: 'Escaped with the crystal',
+      victory: { clean: 'Escaped clean, without the Heart', heart: 'Escaped with the Golden Heart',
+        returned: 'The Heart is home', last: 'The true ending' }[state.ending] ?? 'Escaped',
     }[state.status] ?? state.status;
     $('hud-status').textContent = statusText;
     const dot = $('status-dot');
@@ -164,17 +173,25 @@ export function initHUD() {
 
     const coinGoal = state.coinsRequired ?? 0;
     const coinsLeft = Math.max(0, coinGoal - (state.levelCoins ?? 0));
-    $('objective').innerHTML = coinsLeft > 0
-      ? `Collect ${coinGoal} coins to open the exit door.<br>${coinsLeft} to go. No way back.`
-      : state.needsArtefact && !state.hasArtefact
-        ? 'Coins done. Take the crystal by the door,<br>then escape.'
-        : 'The exit door is open.<br>Get through it.';
-    const levelLabel = state.level ? `${state.level} / ${state.levelCount} · ${state.levelName}` : '--';
+    const deep = state.actUnit === 'DEPTH';
+    $('objective').innerHTML = state.doorSealed
+      ? 'The Warden sealed the door. Hide in cover<br>and keep your heart down until he leaves.'
+      : coinsLeft > 0
+        ? `Collect ${coinGoal} coins to open the exit door.<br>${coinsLeft} to go. No way back.`
+        : state.hasShrine && !state.shrineLit
+          ? "Coins done. Carry the Heart to Aurel's shrine,<br>then escape."
+          : state.heartLock && !state.hasArtefact
+            ? 'The door is open. The Golden Heart is by it:<br>take it, or leave clean.'
+            : 'The exit door is open.<br>Get through it.';
+    const levelLabel = state.level ? `${state.actFloor} / ${state.actFloorCount} · ${state.levelName}` : '--';
     $('hud-level').textContent = levelLabel;
-    // Frame title above the game: "MUSEUM FLOOR · LEVEL 03 · THE GALLERY HALL".
+    // Frame title above the game: "MUSEUM FLOOR · LEVEL 03 · THE GALLERY HALL"
+    // or, in Act III, "THE CATACOMBS · DEPTH 01 · THE BONE STAIR".
     if (state.level) {
-      $('frame-level').textContent = `MUSEUM FLOOR · LEVEL ${String(state.level).padStart(2, '0')}`
+      $('frame-level').textContent = `${deep ? 'THE CATACOMBS · DEPTH' : 'MUSEUM FLOOR · LEVEL'} ${String(state.actFloor).padStart(2, '0')}`
         + ` · ${state.levelName.toUpperCase()}`;
+      const heading = document.querySelector('.page-heading .eyebrow');
+      if (heading) heading.textContent = `${state.operation} / ${state.actName.toUpperCase()}`;
     }
     $('hud-coins').textContent = state.level
       ? `${state.levelCoins} / ${coinGoal} needed (${state.levelCoinTotal} here) · ${state.coins} total` : '--';
@@ -186,7 +203,8 @@ export function initHUD() {
       doorNotice.classList.remove('show');
     }
     const note = coinsLeft > 0 ? `${coinsLeft} more to open the door`
-      : state.needsArtefact && !state.hasArtefact ? 'now take the crystal' : '✓ door open';
+      : state.doorSealed ? 'door sealed by the Warden'
+        : state.hasShrine && !state.shrineLit ? 'now the shrine' : '✓ door open';
     coinChip.innerHTML = `<span class="coin-row"><span class="coin-dot"></span><span class="coin-label">COINS</span>`
       + `<b>${coinsLeft > 0 ? `${state.levelCoins} / ${coinGoal}` : state.levelCoins}</b></span>`
       + `<span class="coin-note">${note}</span>`
@@ -212,7 +230,7 @@ export function initHUD() {
     const guardsEl = $('hud-guards');
     guardsEl.textContent = guards.length
       ? guards.map(g => GUARD_WORDS[g.state] ?? g.state).join(' · ') : '--';
-    setClass(guardsEl, guards.some(g => g.state === 'chase') ? 'bad'
+    setClass(guardsEl, guards.some(g => ['chase', 'hunt', 'inspect'].includes(g.state)) ? 'bad'
       : guards.some(g => g.state === 'suspicious') ? 'warn' : null);
 
     // Buttons
@@ -232,11 +250,13 @@ export function initHUD() {
       : `Calibrating your resting heart rate (~${live ? 20 : 3}s)…`;
     const screen = {
       ready: {
-        eyebrow: state.level ? `LEVEL ${state.level} OF ${state.levelCount} · ${state.levelName.toUpperCase()}` : 'THE MUSEUM JOB',
+        eyebrow: state.level ? `${deep ? 'DEPTH' : 'LEVEL'} ${state.actFloor} OF ${state.actFloorCount} · ${state.levelName.toUpperCase()}` : 'THE MUSEUM JOB',
         title: usable ? 'Ready when you are.' : 'Waiting for heart-rate input.',
-        subtitle: sensorHint ?? (state.needsArtefact
-          ? `Collect ${state.coinsRequired} coins and take the crystal, then escape through the exit door.`
-          : `Collect ${state.coinsRequired} coins to open the exit door. There is no way back.`),
+        subtitle: sensorHint ?? (state.hasShrine
+          ? `Collect ${state.coinsRequired} coins and carry the Heart to Aurel's shrine. The Warden is hunting.`
+          : state.heartLock
+            ? `Collect ${state.coinsRequired} coins to open the exit door. The Golden Heart waits by it, behind the Heart Lock.`
+            : `Collect ${state.coinsRequired} coins to open the exit door. There is no way back.`),
         button: 'banner-start-btn', hint: usable ? 'OR PRESS SPACE' : '', tone: 'victory',
       },
       paused: {

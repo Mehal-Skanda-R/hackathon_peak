@@ -38,6 +38,7 @@ export default class PulseSystem {
       emittedAtMs: performance.now(),
       source: 'heartbeat',
       mode: sensorState.mode,
+      delta, // BPM above baseline at emission (the Warden listens for loud beats)
       hidingAtEmission: engineState.player.hiding
     };
 

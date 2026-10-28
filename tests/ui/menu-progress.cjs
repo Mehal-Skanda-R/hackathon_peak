@@ -58,6 +58,9 @@ fs.mkdirSync(output, { recursive: true });
 
     await page.waitForFunction(() => GS.getGameState().sensor.calibrated);
     await page.locator('#home-play').click();
+    // The first start plays the story intro; Esc skips it.
+    await page.waitForFunction(() => document.body.classList.contains('story-open'));
+    await page.keyboard.press('Escape');
     await page.waitForFunction(() => GS.getGameState().status === 'playing');
     await page.waitForTimeout(2600);
     // Leave the new coin requirement intact: a door must stay locked until paid.
@@ -92,7 +95,7 @@ fs.mkdirSync(output, { recursive: true });
     console.log('PASS coin gate preserved, transition menu blocked, ordinary Menu pauses/resumes and updates progress');
 
     // Persistence/UI completion state, without pretending to win seven levels.
-    await page.evaluate(() => localStorage.setItem('hh-progress-v1', JSON.stringify({ unlocked: 7, completed: 7, bestCoins: 42 })));
+    await page.evaluate(() => localStorage.setItem('hh-progress-v1', JSON.stringify({ unlocked: 7, completed: 7, bestCoins: 42, seen: { intro: true } })));
     await boot();
     const complete = await read();
     assert.equal(complete.count, '7 / 7'); assert.equal(complete.coins, '42');

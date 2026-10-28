@@ -984,3 +984,51 @@ pulse or sensor rules. Soham preserved this work when publishing the After Hours
   `tests/ui/menu-progress.cjs` updated to the floor-1 Continue after a finished castle (same as
   Soham's local fix) and passes. Chromium checks: pause/resume and frozen clock, hints, amber→red
   vignette, ★★★ result and home card, no page errors.
+
+## 12. Story expansion: "The Golden Heart" — Shyam, 28 October 2026
+
+Branch `claude/tender-archimedes-f10i7c` (not merged to main). Campaign-only; Soham's After Hours
+(PR #9) is untouched and its lore is only referenced in a journal page ("the echoes").
+Lore: Blackmere Castle's Warden listens for heartbeats; the Golden Heart (the crystal) is the
+beating heart of Aurel, the first guardian, cut from her shrine. Wren = radio handler, Vesper =
+rival thief. Text lives in `src/story/script.js`.
+- Acts: `config.ACTS` — Act I floors 01-07 (unchanged maps), Act III "The Catacombs"
+  (OPERATION 002) depths 01-03 = LEVELS 8-10 (`bone-stair`, `ossuary`, `heart-shrine`), catacomb
+  art theme, 'x' bone-pile walls, smaller dim circle (`ambientRadius` 84). `LEVEL.final` ends an act.
+  Act III unlocks after escaping floor 07 with the Heart (Home > ACT III).
+- Floor 07: the Heart (crystal) is OPTIONAL. Door opens with coins only. Heart Lock
+  (`src/story/heartLock.js`): at the case raise to +15 BPM above baseline, then settle to <= +5 for
+  2 s (nearby cover counts); or slow-pick by standing at the case 25 s (accessibility, no HR
+  needed). Taking the Heart wakes the Warden and seals the door until The Inspection is passed.
+- The Warden (`src/game/Warden.js`, kind 'warden' in GuardSystem, `WARDEN_BY_LEVEL`): hears every
+  open pulse through walls; from cover only loud (+8) nearby pulses; walks to the last beat, lunges
+  within 70 px, catches at 22 px + LOS. Hidden within 150 px starts The Inspection: 8 s; each pulse
+  > +8 is a strike; 3 strikes = caught; stepping out = he hunts. Floor 07: back to his office after.
+  Shrine depth: hunts from the start, rests 20 s after each Inspection, freed by the shrine.
+  Pulses now carry `delta` (BPM above baseline at emission).
+- Guard kinds (`Guard.js` KIND_TUNING, `GuardSystem.GUARD_KINDS_BY_LEVEL`): hound (hears 1.8x,
+  chase 140), lantern (light 64 px: sees you in it -> chase; lights map only), sleeper (asleep
+  until 2 pulses reach it). Guard state snapshot adds `kind`, `lightRadius` (additive).
+  New states: asleep; Warden dormant/hunt/search/inspect/return/rest/freed.
+- Vesper (`src/story/Rival.js`, floors 03, 05, depth 02): races for the nearest coins (max 3; the
+  engine refuses any coin that would make the door impossible), makes a guard-distracting noise
+  every 9 s, then leaves by the door.
+- Journal: one page per floor (10), visible only in pulse light; Home > ARCHIVE lists pages and
+  the four endings (clean, heart, returned, last = true ending with all 10 pages).
+- Radio (`src/story/radio.js`), cutscene cards (`src/story/cards.js`, code-drawn panels; intro,
+  Act III, endings), heist report at each door (peak BPM above baseline on that floor).
+- Intel: cleared floors bank their coins (wallet); a floor's ready screen sells Guard routes (4),
+  Journal page marker (3), Long look 4 s preview (3), kept per floor. Starts from home or a replay
+  wait on the ready screen while intel is affordable; doors still flow straight on.
+- Progress `hh-progress-v1` adds: journal, endings, seen, catacombs, wallet, intel (old saves load).
+  In-memory fallback when storage throws. Heist Complete shows the ending; end screens now leave
+  full screen (they were invisible in full screen before).
+- Tests: `npm test` 73 passed (+ tests/guards/kinds.test.js, tests/story/story.test.js, geometry
+  covers 10 levels + journal cells). `tests/ui/menu-progress.cjs` passes (skips the first-run intro).
+  Chromium playthroughs passed: intro, journal pickup, intel buy + routes, Vesper takes 3 and
+  leaves, Heart Lock (raise/settle and slow pick), Warden hunt + Inspection pass and 3-strike
+  fail, clean and heart endings, Act III unlock, catacombs, shrine + returned + true ending, no
+  page errors. `tests/engine/combined-heist.cjs` predates the 7-floor build (crystal on floor 1)
+  and was already obsolete. Balance of the Warden/shrine depth is not human-playtested.
+- Merge note for PR #9: expect small conflicts in `src/main.js` (bodies of listeners that PR #9
+  wraps with campaignEvent), `src/game/VisibilitySystem.js` (constructor) and `package.json` test.

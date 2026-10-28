@@ -9,11 +9,17 @@ import { initHUD } from './ui/hud.js';
 import { initHome } from './ui/home.js';
 import { initAudio, playDoorVictory, toggleMute } from './ui/audio.js';
 import { initEndScreens } from './ui/endscreens.js';
-import { recordLevelComplete, recordFloorResult, floorStars, starText, formatTime } from './ui/progress.js';
+import { recordFloorComplete, recordFloorResult, floorStars, starText, formatTime,
+    recordEnding, journalFound, hasSeen, markSeen, bankCoins, buyIntel, hasIntel, wallet, INTEL } from './ui/progress.js';
 import { initDanger } from './ui/danger.js';
 import { initHeartbeatSound, playHeartbeat } from './ui/heartbeatSound.js';
 import { initHints } from './ui/hints.js';
-import { LEVELS } from './game/config.js';
+import { ACTS } from './game/config.js';
+import StorySystem from './story/StorySystem.js';
+import { initRadio, clearRadio } from './story/radio.js';
+import { initStoryUI } from './story/storyUI.js';
+import { playCutscene, storyOpen } from './story/cards.js';
+import { JOURNAL } from './story/script.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
 
 class IntegrationScene extends Phaser.Scene {
@@ -21,7 +27,14 @@ class IntegrationScene extends Phaser.Scene {
     create() {
         const museum = this.scene.get('MuseumScene');
         
-        let pulseSystem, visibilitySystem, guardSystem, pulseEffects;
+        let pulseSystem, visibilitySystem, guardSystem, pulseEffects, storySystem;
+
+        // The story layer for this floor (journal page, Heart Lock, shrine, rival, intel).
+        const buildStory = () => {
+            storySystem?.destroy();
+            storySystem = new StorySystem(museum, { guards: guardSystem, visibility: visibilitySystem });
+            storySystem.onStory = story => updateGameState({ story });
+        };
 
         const initSystems = () => {
             if (visibilitySystem && typeof visibilitySystem.destroy === 'function') visibilitySystem.destroy();
@@ -38,6 +51,7 @@ class IntegrationScene extends Phaser.Scene {
             guardSystem.setVisibilityProbe((x, y) => visibilitySystem.revealAt(x, y));
             pulseEffects = new PulseEffects(museum);
             pulseEffects.graphics.setDepth(51);
+            buildStory();
         };
 
         initSystems();
@@ -58,7 +72,10 @@ class IntegrationScene extends Phaser.Scene {
         // seed the shared snapshot so the HUD shows the level before Start.
         updateGameState(museum.getState());
         museum.events.on('engine:state', (engineState) => {
-            if (lastStatus === 'ready' && engineState.status === 'playing') visibilitySystem?.revealAll(2000, 500);
+            // Bought intel ("Long look") doubles the preview.
+            if (lastStatus === 'ready' && engineState.status === 'playing') {
+                visibilitySystem?.revealAll(hasIntel(engineState.levelId, 'preview') ? 4000 : 2000, 500);
+            }
             lastStatus = engineState.status;
             updateGameState(engineState);
         });
@@ -72,21 +89,51 @@ class IntegrationScene extends Phaser.Scene {
             visibilitySystem?.revealAll(3000, 400);
             const stars = floorStars({ allCoins: s.levelCoins >= s.levelCoinTotal, spotted });
             const record = recordFloorResult(s.level, { timeMs: floorMs, stars });
+            bankCoins(s.levelCoins); // the wallet that pays for intel
+            const unit = s.actUnit === 'DEPTH' ? 'Depth' : 'Floor';
             window.dispatchEvent(new CustomEvent('hud-notice', { detail: {
                 tone: 'cleared', ms: 3600,
-                text: `Floor ${String(s.level).padStart(2, '0')} cleared · ${starText(stars)} · ${formatTime(floorMs)}`
+                text: `${unit} ${String(s.actFloor).padStart(2, '0')} cleared · ${starText(stars)} · ${formatTime(floorMs)}`
                     + (record.newBest ? ' · best time!' : ''),
             } }));
-            // Between floors the door plays the victory sound; on the final floor
-            // it is saved for the Heist Complete screen (engine:victory below).
-            if (s.level < s.levelCount) playDoorVictory();
+            // Between floors the door plays the victory sound; on an act's final
+            // floor it is saved for the Heist Complete screen (engine:victory below).
+            if (!s.finalFloor) playDoorVictory();
         });
         // Campaign progress: finishing a floor unlocks the next one.
-        museum.events.on('engine:level-complete', (s) => recordLevelComplete(s.level, s.coins, LEVELS.length));
+        museum.events.on('engine:level-complete', (s) => recordFloorComplete(s.level, s.coins));
         museum.events.on('engine:victory', (s) => {
-            recordLevelComplete(s.level, s.coins, LEVELS.length);
+            recordFloorComplete(s.level, s.coins);
             playDoorVictory(); // as the Heist Complete screen appears
+            // Endings: floor 07 with or without the Golden Heart; the shrine, and
+            // the true ending once every journal page has been found.
+            const endings = s.levelId === 'final-heist' ? [s.hasArtefact ? 'heart' : 'clean']
+                : s.levelId === 'heart-shrine' ? ['returned', ...(journalFound().size >= JOURNAL.length ? ['last'] : [])] : [];
+            endings.forEach(recordEnding);
+            updateGameState({ ending: endings.at(-1) ?? null });
+            endings.reduce((shown, id) => shown.then(() => playCutscene(id)), Promise.resolve());
         });
+
+        // Starting a floor: the first time, a cutscene plays first (the intro on
+        // floor 01, Act III's on depth 01). Starts from the home screen or a
+        // replay (`shop`) wait on the ready screen while there is intel on this
+        // floor that the wallet can buy; doors still flow straight on.
+        const cutsceneFor = level => level === 1 && !hasSeen('intro') ? 'intro'
+            : level === ACTS[1].first + 1 && !hasSeen('act3') ? 'act3' : null;
+        const shopWaiting = (levelId) => Object.entries(INTEL)
+            .some(([id, item]) => !hasIntel(levelId, id) && wallet() >= item.cost);
+        const startIfReady = (auto = true, shop = false) => {
+            const state = getGameState();
+            if (state.status !== 'ready' || storyOpen()) return;
+            const cutscene = cutsceneFor(state.level);
+            if (cutscene) {
+                markSeen(cutscene);
+                playCutscene(cutscene).then(() => startIfReady(auto, shop));
+                return;
+            }
+            if (auto && shop && shopWaiting(state.levelId)) return;
+            if (isSensorUsable(state.sensor)) museum.startRun();
+        };
 
         // Home screen: play a floor (or continue the paused one); menu pauses play.
         const homeOpen = () => document.body.classList.contains('home-open');
@@ -98,10 +145,9 @@ class IntegrationScene extends Phaser.Scene {
                 if (isSensorUsable(state.sensor)) museum.setPaused(false);
                 return;
             }
-            if (level === 1) setRunDeaths(0); // a fresh run
-            museum.events.once('engine:ready', () => {
-                if (isSensorUsable(getGameState().sensor)) museum.startRun();
-            });
+            if (ACTS.some(act => act.first === level - 1)) setRunDeaths(0); // a fresh run
+            clearRadio();
+            museum.events.once('engine:ready', () => startIfReady(true, true));
             museum.startAtLevel(level - 1);
         });
         window.addEventListener('hud-open-menu', () => {
@@ -112,9 +158,7 @@ class IntegrationScene extends Phaser.Scene {
         });
 
         museum.events.on('engine:level-complete', () => {
-            museum.events.once('engine:ready', () => {
-                if (isSensorUsable(getGameState().sensor)) museum.startRun();
-            });
+            museum.events.once('engine:ready', () => startIfReady());
         });
 
         // Deaths in the current run (since the last start from level 1).
@@ -122,9 +166,7 @@ class IntegrationScene extends Phaser.Scene {
         const setRunDeaths = (n) => { runDeaths = n; updateGameState({ runDeaths }); };
         setRunDeaths(0);
         museum.events.on('engine:caught', () => setRunDeaths(runDeaths + 1));
-        const startWhenReady = () => museum.events.once('engine:ready', () => {
-            if (isSensorUsable(getGameState().sensor)) museum.startRun();
-        });
+        const startWhenReady = () => { clearRadio(); museum.events.once('engine:ready', () => startIfReady(true, true)); };
         // End screens: Replay level, Restart from level 1, Home.
         window.addEventListener('hud-end-replay', () => { startWhenReady(); museum.restartRun(); });
         window.addEventListener('hud-end-restart', () => { setRunDeaths(0); startWhenReady(); museum.restartGame(); });
@@ -159,6 +201,8 @@ class IntegrationScene extends Phaser.Scene {
                 pulseSystem.update(delta, sensorData, state);
             }
             if (pulseEffects) pulseEffects.update(delta);
+            // Lantern-bearers light the map around them (map only, like lamps).
+            visibilitySystem?.setMovingLights(guardSystem?.lights() ?? []);
             if (visibilitySystem) visibilitySystem.update(delta);
             
             if (state.status === 'playing' && guardSystem && !previewing) {
@@ -166,9 +210,10 @@ class IntegrationScene extends Phaser.Scene {
             }
             if (guardSystem) {
                 const guards = guardSystem.getStates();
-                if (state.status === 'playing' && guards.some(g => g.state === 'chase')) spotted = true;
+                if (state.status === 'playing' && guards.some(g => g.state === 'chase' || g.state === 'inspect')) spotted = true;
                 updateGameState({ guards });
             }
+            storySystem?.update(delta, getGameState(), { previewing });
             // The floor clock runs only while the thief can actually play.
             if (state.status === 'playing' && !previewing) {
                 floorMs += delta;
@@ -179,8 +224,7 @@ class IntegrationScene extends Phaser.Scene {
 
         window.addEventListener('hud-start-clicked', () => {
             if (homeOpen()) return;
-            const state = getGameState();
-            if (state.status === 'ready' && isSensorUsable(state.sensor)) museum.startRun();
+            startIfReady(false);
         });
 
         // Explicit resume only; setPaused(false) itself refuses terminal states.
@@ -195,10 +239,8 @@ class IntegrationScene extends Phaser.Scene {
         window.addEventListener('hud-restart-clicked', () => {
             const { status } = getGameState();
             if (status !== 'caught' && status !== 'victory') return;
-            museum.events.once('engine:ready', () => {
-                if (isSensorUsable(getGameState().sensor)) museum.startRun();
-            });
-            // Caught: retry this level. Final victory: start again from level 1.
+            museum.events.once('engine:ready', () => startIfReady());
+            // Caught: retry this level. Final victory: start again from the act's first floor.
             if (status === 'victory') museum.restartGame();
             else museum.restartRun();
         });
@@ -235,7 +277,7 @@ class IntegrationScene extends Phaser.Scene {
         // P or Esc pauses in place; pressing it again (or Space) resumes.
         const PAUSED_BY_PLAYER = 'Game paused';
         window.addEventListener('keydown', (event) => {
-            if (event.repeat || homeOpen() || !['p', 'P', 'Escape'].includes(event.key)) return;
+            if (event.repeat || homeOpen() || storyOpen() || !['p', 'P', 'Escape'].includes(event.key)) return;
             const state = getGameState();
             if (state.status === 'playing') museum.setPaused(true, PAUSED_BY_PLAYER);
             else if (state.status === 'paused' && state.pauseReason === PAUSED_BY_PLAYER) {
@@ -245,8 +287,24 @@ class IntegrationScene extends Phaser.Scene {
 
         initHints(museum);
 
+        // Dev server only (not in production builds): live systems for browser checks.
+        if (import.meta.env.DEV) window.__hhSystems = () => ({ guardSystem, storySystem, visibilitySystem });
+
+        // Intel bought on a floor's ready screen applies to that floor straight away.
+        window.addEventListener('hud-buy-intel', (event) => {
+            const state = getGameState();
+            const item = INTEL[event.detail];
+            if (state.status !== 'ready' || !item) return;
+            const result = buyIntel(state.levelId, event.detail);
+            notice(result.ok ? `Intel bought: ${item.name}. ${item.detail}`
+                : result.reason === 'funds' ? `Not enough coins banked for ${item.name}.` : `${item.name} already bought.`);
+            if (result.ok) buildStory();
+            window.dispatchEvent(new Event('hud-intel-changed'));
+            updateGameState({});
+        });
+
         this.input.keyboard.on('keydown-SPACE', () => {
-            if (homeOpen()) return;
+            if (homeOpen() || storyOpen()) return;
             const { status } = getGameState();
             if (status === 'ready') window.dispatchEvent(new Event('hud-start-clicked'));
             else if (status === 'paused') window.dispatchEvent(new Event('hud-resume-clicked'));
@@ -272,6 +330,8 @@ const config = {
 };
 
 initHUD();
+initRadio();
+initStoryUI();
 initHome();
 initEndScreens();
 initDanger();
