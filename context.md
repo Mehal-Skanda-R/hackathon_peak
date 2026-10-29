@@ -925,7 +925,8 @@ context commit verified on main (or publication pending/failed).
 
 Soham explicitly authorized implementing the accepted expansion ideas after the hackathon.
 This supersedes the MVP-only exclusion of replay/ghosts and additional modes for this work.
-Development is isolated on `feature/after-hours-expansion`; production/main remains unchanged.
+Development was isolated on `feature/after-hours-expansion`. Soham authorized merging
+PR #9 into the live game on 29 October 2026; the expansion is now on main and production.
 Scope: optional After Hours mission, one active Phaser scene/scheduler and the existing sensor
 facade, museum security rhythm, cursed return journey, bounded in-memory ghost positions/pulses,
 safe authored exhibit shifts, separate local equipment progression, and a local director mode.
@@ -935,7 +936,9 @@ Full online thief/hacker co-op and a second wearable are deferred until a networ
 exists; do not advertise local director controls as online multiplayer or dual-wearable co-op.
 Published in [PR #9](https://github.com/Mehal-Skanda-R/hackathon_peak/pull/9), branch
 `feature/after-hours-expansion`, code commit `4620eeae39abed01afedd6d475d676c745fd33bd`.
-Expansion code is not merged or deployed. It includes Shyam's campaign polish through
+Merged as `f12cf0a11681ae532d24a5c10a0dac07d88ffa1d` and verified live at
+https://heartbeat-heist.vercel.app/ on 29 October 2026. Choose **NEW MISSION / AFTER HOURS**
+on the castle home screen. It includes Shyam's campaign polish through
 `b333b98`; his audio, vignette, pause controls, clock/ratings, hints and lamp lighting are
 preserved. Campaign shortcuts are gated while sleeping. The PR adds an optional third
 argument `VisibilitySystem(scene, map, { lamps })` while retaining the existing default;
@@ -958,6 +961,11 @@ with both guards/lasers, a chase and four safe exhibit shifts active, without te
 disabled capture. The controller allows bounded ordinary retries and records captures; it
 is not a deterministic human fun/balance study. Actual Watch 7 sensing, all equipment/curse
 balance and online co-op remain unverified. Commands/interfaces are in docs/AFTER_HOURS.md.
+Production smoke check (fresh Chromium, 1440 x 1100) passed on the actual live site:
+After Hours entry, all three artefact options, mission start/movement/P pause/resume,
+return to campaign, campaign start/P pause/resume and frozen floor clock, one canvas and
+no page errors. The deployed JS asset contains the After Hours entry. The merged source
+tree matches the previously tested feature tree. No real wearable test was performed.
 No medical, stress-detection or exact physical-beat claims.
 
 ## 11. Post-hackathon campaign polish — Shyam, 27 October 2026
