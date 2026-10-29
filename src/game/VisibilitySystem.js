@@ -72,7 +72,9 @@ export const AMBIENT_RADIUS = 120;
 const AMBIENT_STRENGTH = 0.28;
 
 export default class VisibilitySystem {
-  constructor(scene, mapGeometry) {
+  // Existing callers retain the active campaign lamps. Other scenes may supply
+  // their own lamp coordinates without changing campaign live bindings.
+  constructor(scene, mapGeometry, { lamps = LEVEL.decor?.lamps ?? [] } = {}) {
     this.scene = scene;
     this.mapGeometry = mapGeometry;
 
@@ -86,8 +88,8 @@ export default class VisibilitySystem {
     // One soft pool and one small bright core per lamp, each breathing slowly
     // on its own phase so the room does not pulse in unison.
     const glowKey = lampGlowTexture(scene);
-    this.lamps = (LEVEL.decor?.lamps ?? []).map(([x, y], i) => ({ x: x + 5, y: y + 10, phase: i * 1.7 }));
-    this.lampGlows = (LEVEL.decor?.lamps ?? []).flatMap(([x, y], i) => [
+    this.lamps = lamps.map(([x, y], i) => ({ x: x + 5, y: y + 10, phase: i * 1.7 }));
+    this.lampGlows = lamps.flatMap(([x, y], i) => [
       { image: scene.add.image(x + 5, y + 10, glowKey).setScale(58 / LAMP_TEXTURE_RADIUS), base: 0.16, phase: i * 1.7 },
       { image: scene.add.image(x, y, glowKey).setScale(16 / LAMP_TEXTURE_RADIUS), base: 0.55, phase: i * 1.7 },
     ]);

@@ -15,6 +15,13 @@ import { initHeartbeatSound, playHeartbeat } from './ui/heartbeatSound.js';
 import { initHints } from './ui/hints.js';
 import { LEVELS } from './game/config.js';
 import { subscribeToHeartRate, setSensorMode, connectHeartRate, setTestBpm } from './sensor/heartRate.js';
+import { initAfterHours } from './afterhours/ui.js';
+
+// The optional mission sleeps the campaign. Its controls must never restart or
+// advance the sleeping scene; Bluetooth continues through the one sensor facade.
+const campaignEvent = (name, callback) => window.addEventListener(name, event => {
+    if (!document.body.classList.contains('after-hours-open')) callback(event);
+});
 
 class IntegrationScene extends Phaser.Scene {
     constructor() { super('IntegrationScene'); }
@@ -90,7 +97,7 @@ class IntegrationScene extends Phaser.Scene {
 
         // Home screen: play a floor (or continue the paused one); menu pauses play.
         const homeOpen = () => document.body.classList.contains('home-open');
-        window.addEventListener('hud-play-level', (event) => {
+        campaignEvent('hud-play-level', (event) => {
             const level = event.detail;
             const state = getGameState();
             window.dispatchEvent(new Event('hud-hide-home'));
@@ -104,7 +111,7 @@ class IntegrationScene extends Phaser.Scene {
             });
             museum.startAtLevel(level - 1);
         });
-        window.addEventListener('hud-open-menu', () => {
+        campaignEvent('hud-open-menu', () => {
             // A door transition must finish before opening another screen.
             if (getGameState().status === 'transition') return;
             if (getGameState().status === 'playing') museum.setPaused(true, 'Menu open');
@@ -126,9 +133,9 @@ class IntegrationScene extends Phaser.Scene {
             if (isSensorUsable(getGameState().sensor)) museum.startRun();
         });
         // End screens: Replay level, Restart from level 1, Home.
-        window.addEventListener('hud-end-replay', () => { startWhenReady(); museum.restartRun(); });
-        window.addEventListener('hud-end-restart', () => { setRunDeaths(0); startWhenReady(); museum.restartGame(); });
-        window.addEventListener('hud-end-home', () => window.dispatchEvent(new Event('hud-show-home')));
+        campaignEvent('hud-end-replay', () => { startWhenReady(); museum.restartRun(); });
+        campaignEvent('hud-end-restart', () => { setRunDeaths(0); startWhenReady(); museum.restartGame(); });
+        campaignEvent('hud-end-home', () => window.dispatchEvent(new Event('hud-show-home')));
 
         museum.events.on('guards:caught', () => {
             museum.catchPlayer();
@@ -177,14 +184,14 @@ class IntegrationScene extends Phaser.Scene {
             }
         });
 
-        window.addEventListener('hud-start-clicked', () => {
+        campaignEvent('hud-start-clicked', () => {
             if (homeOpen()) return;
             const state = getGameState();
             if (state.status === 'ready' && isSensorUsable(state.sensor)) museum.startRun();
         });
 
         // Explicit resume only; setPaused(false) itself refuses terminal states.
-        window.addEventListener('hud-resume-clicked', () => {
+        campaignEvent('hud-resume-clicked', () => {
             const state = getGameState();
             if (state.status === 'paused' && isSensorUsable(state.sensor)) museum.setPaused(false);
         });
@@ -192,7 +199,7 @@ class IntegrationScene extends Phaser.Scene {
         // PLAY AGAIN: full round reset (scene restart recreates player, artefact,
         // guards, pulses and darkness via engine:ready), then start immediately
         // if the sensor is still usable; otherwise wait in ready for Start.
-        window.addEventListener('hud-restart-clicked', () => {
+        campaignEvent('hud-restart-clicked', () => {
             const { status } = getGameState();
             if (status !== 'caught' && status !== 'victory') return;
             museum.events.once('engine:ready', () => {
@@ -234,7 +241,7 @@ class IntegrationScene extends Phaser.Scene {
 
         // P or Esc pauses in place; pressing it again (or Space) resumes.
         const PAUSED_BY_PLAYER = 'Game paused';
-        window.addEventListener('keydown', (event) => {
+        campaignEvent('keydown', (event) => {
             if (event.repeat || homeOpen() || !['p', 'P', 'Escape'].includes(event.key)) return;
             const state = getGameState();
             if (state.status === 'playing') museum.setPaused(true, PAUSED_BY_PLAYER);
@@ -246,7 +253,7 @@ class IntegrationScene extends Phaser.Scene {
         initHints(museum);
 
         this.input.keyboard.on('keydown-SPACE', () => {
-            if (homeOpen()) return;
+            if (homeOpen() || document.body.classList.contains('after-hours-open')) return;
             const { status } = getGameState();
             if (status === 'ready') window.dispatchEvent(new Event('hud-start-clicked'));
             else if (status === 'paused') window.dispatchEvent(new Event('hud-resume-clicked'));
@@ -282,4 +289,5 @@ window.addEventListener('hud-toggle-sound', () => toggleMute());
 const game = new Phaser.Game(config);
 game.events.once('ready', () => {
     game.scene.add('IntegrationScene', IntegrationScene, true);
+    initAfterHours(game);
 });
